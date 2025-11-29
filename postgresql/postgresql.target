@@ -1,8 +1,8 @@
 [Unit]
 Description=PostgreSQL Service Target
 Documentation=man:systemd.target(5)
-Requires=postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
-After=postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
+Requires=postgresql-pod.service postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
+After=postgresql-pod.service postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
 
 # Allow isolation - can stop/start this target independently
 AllowIsolate=yes

@@ -41,6 +41,12 @@ HealthTimeout=10s
 HealthStartPeriod=60s
 HealthRetries=3
 
+# This container is part of a Pod
+Pod=postgresql.pod
+
+# Share /var/run/postgresql/ between containers in the pod for the Unix socket
+Volume=/var/run/quadlets/postgresql:/var/run/postgresql:z
+
 [Service]
 Restart=always
 RestartSec=10
@@ -49,6 +55,9 @@ TimeoutStopSec=30
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Skaffold filesystem + fix permissions
+ExecStartPre=install -m 0700 -o 70 -g 70 -d /var/run/quadlets/postgresql
 
 [Install]
 WantedBy=postgresql.target

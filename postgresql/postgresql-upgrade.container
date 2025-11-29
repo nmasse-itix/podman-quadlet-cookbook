@@ -32,6 +32,9 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
 
+# This container is part of a Pod
+Pod=postgresql.pod
+
 [Service]
 Restart=no
 TimeoutStartSec=600

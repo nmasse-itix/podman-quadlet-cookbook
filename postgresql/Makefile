@@ -48,7 +48,12 @@ dryrun:
 	install -D -m 0644 -o root -g root $< $@
 
 /etc/quadlets/$(PROJECT_NAME)/%: config/%
-	install -D -m 0644 -o root -g root $< $@
+	@run() { echo $$*; "$$@"; }; \
+	if [ -x $< ]; then \
+		run install -D -m 0755 -o root -g root $< $@; \
+	else \
+		run install -D -m 0644 -o root -g root $< $@; \
+	fi
 
 install: pre-requisites dryrun $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
 	systemctl daemon-reload
@@ -63,4 +68,4 @@ uninstall: pre-requisites
 	systemctl daemon-reload
 
 clean:
-	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
+	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/

@@ -1,0 +1,46 @@
+[Unit]
+Description=PostgreSQL Database Server - Backup
+Documentation=https://hub.docker.com/_/postgres/
+After=network.target postgresql-server.service
+Requires=postgresql-server.service
+
+# Start/stop this unit when the target is started/stopped
+PartOf=postgresql.target
+
+[Container]
+ContainerName=postgresql-backup-job
+Image=docker.io/library/postgres:${PG_MAJOR}-alpine
+
+# Network configuration
+Network=host
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Use a custom backup script
+Entrypoint=/usr/local/bin/backup.sh
+User=postgres
+
+# Volume mounts
+Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+Volume=/etc/quadlets/postgresql/backup.sh:/usr/local/bin/backup.sh:z,ro
+
+# This container is part of a Pod
+Pod=postgresql.pod
+
+# Share /var/run/postgresql/ between containers in the pod for the Unix socket
+Volume=/var/run/quadlets/postgresql:/var/run/postgresql:z
+Volume=/var/lib/quadlets/postgresql/backup:/backup:z
+
+[Service]
+Restart=no
+TimeoutStartSec=600
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# This container is a job - run once to completion
+Type=oneshot
+
+# Skaffold filesystem + fix permissions
+ExecStartPre=install -m 0700 -o 70 -g 70 -d /var/lib/quadlets/postgresql/backup
