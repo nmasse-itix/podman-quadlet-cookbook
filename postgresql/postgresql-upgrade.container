@@ -1,0 +1,46 @@
+[Unit]
+Description=PostgreSQL Database Server - Upgrade
+Documentation=https://hub.docker.com/r/pgautoupgrade/pgautoupgrade
+After=network.target postgresql-set-major.service
+Before=postgresql-server.service
+Requires=postgresql-set-major.service
+
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+# and initialized
+ConditionPathExists=/var/lib/quadlets/postgresql/.initialized
+# and not yet upgraded
+ConditionPathExists=!/var/lib/quadlets/postgresql/latest/docker/PG_VERSION
+
+# Start/stop this unit when the target is started/stopped
+PartOf=postgresql.target
+
+[Container]
+ContainerName=postgresql-upgrade-to-${PG_MAJOR}-job
+Image=docker.io/pgautoupgrade/pgautoupgrade:${PG_MAJOR}-alpine
+
+# Network configuration
+Network=host
+
+# PostgreSQL storage is specific to major version
+Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
+Environment=PGAUTO_ONESHOT=yes
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Volume mounts
+Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+
+[Service]
+Restart=no
+TimeoutStartSec=600
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# This container is a job - run once to completion
+Type=oneshot
+
+[Install]
+WantedBy=postgresql.target

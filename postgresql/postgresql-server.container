@@ -1,0 +1,54 @@
+[Unit]
+Description=PostgreSQL Database Server
+Documentation=https://hub.docker.com/_/postgres/
+After=network.target postgresql-upgrade.service postgresql-init.service
+Requires=postgresql-upgrade.service postgresql-init.service
+Before=postgresql.target
+
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+# and initialized
+ConditionPathExists=/var/lib/quadlets/postgresql/.initialized
+# and upgraded
+ConditionPathExists=/var/lib/quadlets/postgresql/latest/docker/PG_VERSION
+
+# Start/stop this unit when the target is started/stopped
+PartOf=postgresql.target
+
+[Container]
+ContainerName=postgresql-server
+Image=docker.io/library/postgres:${PG_MAJOR}-alpine
+
+# Network configuration
+Network=host
+
+# PostgreSQL storage is specific to major version
+Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
+
+# Safety flag to avoid initialization of an unwanted database
+Environment=DATABASE_ALREADY_EXISTS=true
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Volume mounts
+Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+
+# Health check
+HealthCmd=pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -p $PGPORT
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=60s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+[Install]
+WantedBy=postgresql.target

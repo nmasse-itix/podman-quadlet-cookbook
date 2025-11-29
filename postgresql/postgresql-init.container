@@ -1,0 +1,51 @@
+[Unit]
+Description=PostgreSQL Database Server - Initialization
+Documentation=https://hub.docker.com/_/postgres/
+After=network.target postgresql-set-major.service
+Before=postgresql-server.service
+Requires=postgresql-set-major.service
+
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+# and NOT initialized
+ConditionPathExists=!/var/lib/quadlets/postgresql/.initialized
+
+# Start/stop this unit when the target is started/stopped
+PartOf=postgresql.target
+
+[Container]
+ContainerName=postgresql-init-job
+Image=docker.io/library/postgres:${PG_MAJOR}-alpine
+
+# Network configuration
+Network=host
+
+# PostgreSQL storage is specific to major version
+Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Use the official entrypoint script to initialize the database
+Entrypoint=/usr/local/bin/docker-ensure-initdb.sh
+# Entrypoint=/bin/sleep
+# Exec=INF
+
+# Volume mounts
+Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+
+[Service]
+Restart=no
+TimeoutStartSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# This container is a job - run once to completion
+Type=oneshot
+
+# Mark the database as intialized
+ExecStartPost=touch /var/lib/quadlets/postgresql/.initialized
+
+[Install]
+WantedBy=postgresql.target

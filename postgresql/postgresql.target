@@ -1,0 +1,13 @@
+[Unit]
+Description=PostgreSQL Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
+After=postgresql-server.service postgresql-upgrade.service postgresql-init.service postgresql-set-major.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+
+[Install]
+WantedBy=multi-user.target

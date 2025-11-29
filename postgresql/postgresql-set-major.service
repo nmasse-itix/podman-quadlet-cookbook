@@ -1,0 +1,29 @@
+[Unit]
+Description=PostgreSQL Database Server - Set major version
+Documentation=https://hub.docker.com/_/postgres/
+Before=postgresql-update.service postgresql-server.service
+
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=postgresql.target
+
+[Service]
+Restart=no
+TimeoutStartSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
+
+# Skaffold filesystem + fix permissions
+ExecStartPre=install -m 0700 -o 70 -g 70 -d /var/lib/quadlets/postgresql
+
+# Set the "latest" symlink to point to the desired major version
+ExecStart=ln -sfT ${PG_MAJOR} /var/lib/quadlets/postgresql/latest
+
+# This service is a job - run once to completion
+Type=oneshot
+
+[Install]
+WantedBy=postgresql.target
