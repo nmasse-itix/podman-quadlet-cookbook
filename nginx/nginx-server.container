@@ -1,8 +1,8 @@
 [Unit]
 Description=Nginx HTTP Server
 Documentation=https://hub.docker.com/_/nginx
-After=network.target nginx-init.service
-Requires=nginx-init.service
+After=network.target nginx-init.service nginx-update.service
+Requires=nginx-init.service nginx-update.service
 Before=nginx.target
 
 # Only start if Nginx has been configured

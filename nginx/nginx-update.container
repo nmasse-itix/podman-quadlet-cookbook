@@ -1,19 +1,19 @@
 [Unit]
-Description=Initialize Nginx root directory from a Git repository
+Description=Update Nginx root directory from a Git repository
 Documentation=https://hub.docker.com/r/alpine/git
 After=network-online.target
 Before=nginx-server.service
 
 # Only start if the service has been configured
 ConditionPathExists=/etc/quadlets/nginx/config.env
-# And if the git repo has NOT been cloned yet
-ConditionPathExists=!/var/lib/quadlets/nginx/.git
+# And if the git repo has already been cloned
+ConditionPathExists=/var/lib/quadlets/nginx/.git
 
 # Start/stop this unit when the target is started/stopped
 PartOf=nginx.target
 
 [Container]
-ContainerName=nginx-init-job
+ContainerName=nginx-update-job
 Image=docker.io/alpine/git:latest
 
 # Network configuration
@@ -23,7 +23,8 @@ Network=host
 EnvironmentFile=/etc/quadlets/nginx/config.env
 
 # Clone the website repository
-Exec=clone -b ${GIT_BRANCH} ${GIT_REPO} /var/git
+Exec=pull
+WorkingDir=/var/git
 
 # Volume mounts
 Volume=/var/lib/quadlets/nginx:/var/git:z
@@ -34,9 +35,6 @@ TimeoutStartSec=30
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/nginx/config.env
-
-# Skaffold filesystem + fix permissions
-ExecStartPre=install -m 0755 -o root -g root -d /var/lib/quadlets/nginx
 
 # This container is a job - run once to completion
 Type=oneshot
