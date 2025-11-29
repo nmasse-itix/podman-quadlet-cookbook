@@ -1,0 +1,12 @@
+[Unit]
+Description=Nginx Service Target
+Documentation=man:systemd.target(5)
+Wants=nginx-server.service nginx-init.service
+After=nginx-server.service nginx-init.service
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Nginx has been configured
+ConditionPathExists=/etc/quadlets/nginx/config.env
+
+[Install]
+WantedBy=multi-user.target

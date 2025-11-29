@@ -1,0 +1,44 @@
+[Unit]
+Description=Initialize Nginx root directory from a Git repository
+Documentation=https://hub.docker.com/r/alpine/git
+After=network-online.target
+Before=nginx-server.service
+
+# Only start if the service has NOT been configured
+ConditionPathExists=/etc/quadlets/nginx/config.env
+ConditionPathExists=!/var/lib/quadlets/nginx/.git
+
+# Start/stop this unit when the target is started/stopped
+PartOf=nginx.target
+
+[Container]
+ContainerName=nginx-init-job
+Image=docker.io/alpine/git:latest
+
+# Network configuration
+Network=host
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/nginx/config.env
+
+# Clone the website repository
+Exec=clone -b ${GIT_BRANCH} ${GIT_REPO} /var/git
+
+# Volume mounts
+Volume=/var/lib/quadlets/nginx:/var/git:z
+
+[Service]
+Restart=no
+TimeoutStartSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nginx/config.env
+
+# Skaffold filesystem + fix permissions
+ExecStartPre=install -m 0755 -o root -g root -d /var/lib/quadlets/nginx
+
+# This container is a job - run once to completion
+Type=oneshot
+
+[Install]
+WantedBy=nginx.target

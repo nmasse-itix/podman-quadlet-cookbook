@@ -1,0 +1,45 @@
+[Unit]
+Description=Nginx HTTP Server
+Documentation=https://hub.docker.com/_/nginx
+After=network.target nginx-init.service
+Requires=nginx-init.service
+Before=nginx.target
+
+# Only start if Nginx has been configured
+ConditionPathExists=/etc/quadlets/nginx/config.env
+ConditionPathExists=/var/lib/quadlets/nginx/.git
+
+# Start/stop this unit when the target is started/stopped
+PartOf=nginx.target
+
+[Container]
+ContainerName=nginx-server
+Image=docker.io/library/nginx:mainline-alpine
+
+# Network configuration
+Network=host
+
+# Those environment variables will be injected by podman into the container
+EnvironmentFile=/etc/quadlets/nginx/config.env
+
+# Volume mounts
+Volume=/var/lib/quadlets/nginx/nginx/website:/usr/share/nginx/html:z
+
+# Health check
+HealthCmd=curl -sSf -o /dev/null http://localhost/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nginx/config.env
+
+[Install]
+WantedBy=nginx.target
