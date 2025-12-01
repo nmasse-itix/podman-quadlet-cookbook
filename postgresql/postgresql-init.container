@@ -27,13 +27,11 @@ Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
 EnvironmentFile=/etc/quadlets/postgresql/config.env
 
 # Use the official entrypoint script to initialize the database
-Entrypoint=/usr/local/bin/docker-ensure-initdb.sh
+Entrypoint=/usr/local/bin/init.sh
 
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
-
-# This container is part of a Pod
-Pod=postgresql.pod
+Volume=/etc/quadlets/postgresql/init.sh:/usr/local/bin/init.sh:z,ro
 
 [Service]
 Restart=no

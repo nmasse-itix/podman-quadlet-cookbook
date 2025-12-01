@@ -41,9 +41,6 @@ HealthTimeout=10s
 HealthStartPeriod=60s
 HealthRetries=3
 
-# This container is part of a Pod
-Pod=postgresql.pod
-
 # Share /var/run/postgresql/ between containers in the pod for the Unix socket
 Volume=/var/run/quadlets/postgresql:/var/run/postgresql:z
 
