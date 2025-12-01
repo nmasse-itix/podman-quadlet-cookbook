@@ -91,3 +91,8 @@ sudo systemctl start postgresql.target
 
 In the logs, you should see the **postgresql-init.service** unit restoring the database from the last backup.
 
+Finally, remove the quadlets, their configuration and their data.
+
+```sh
+sudo make uninstall clean
+```
