@@ -67,6 +67,14 @@ uninstall: pre-requisites
 	rm -f $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
 	systemctl daemon-reload
 
+tail-logs: pre-requisites
+	@run() { echo $$*; "$$@"; }; \
+	declare -a journalctl_args=( -f ); \
+	for unit in $(SYSTEMD_MAIN_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do \
+		journalctl_args+=( -u "$$unit" ); \
+	done; \
+	run journalctl "$${journalctl_args[@]}"
+
 clean: pre-requisites
 	@run() { echo $$*; "$$@"; }; \
 	read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
