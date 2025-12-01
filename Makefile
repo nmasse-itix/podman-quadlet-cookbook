@@ -67,5 +67,11 @@ uninstall: pre-requisites
 	rm -f $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
 	systemctl daemon-reload
 
-clean:
-	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
+clean: pre-requisites
+	@run() { echo $$*; "$$@"; }; \
+	read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
+	if [ "$$ans" = "yes" ] || [ "$$ans" = "YES" ]; then \
+		run rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/; \
+	else \
+		echo "Aborted."; exit 1; \
+	fi
