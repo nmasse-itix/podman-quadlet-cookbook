@@ -26,7 +26,7 @@ Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
 # Those environment variables will be injected by podman into the container
 EnvironmentFile=/etc/quadlets/postgresql/config.env
 
-# Use the official entrypoint script to initialize the database
+# Use our entrypoint script to initialize the database
 Entrypoint=/usr/local/bin/init.sh
 
 # Volume mounts

@@ -96,3 +96,9 @@ Finally, remove the quadlets, their configuration and their data.
 ```sh
 sudo make uninstall clean
 ```
+
+## Integration tests
+
+```sh
+sudo make test
+```

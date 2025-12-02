@@ -2,6 +2,12 @@
 
 set -Eeuo pipefail
 
+echo "PostgreSQL binaries version:"
+postgres --version
+echo
+echo "PostgreSQL data directory: $PGDATA"
+echo
+
 last_backup=""
 for f in /var/lib/postgresql/backup/*/backup_manifest; do
   # If there are no backups, the glob pattern above won't match any files

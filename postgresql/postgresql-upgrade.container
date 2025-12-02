@@ -22,15 +22,16 @@ Image=docker.io/pgautoupgrade/pgautoupgrade:${PG_MAJOR}-alpine
 # Network configuration
 Network=host
 
-# PostgreSQL storage is specific to major version
-Environment=PGDATA=/var/lib/postgresql/${PG_MAJOR}/docker
-Environment=PGAUTO_ONESHOT=yes
-
 # Those environment variables will be injected by podman into the container
 EnvironmentFile=/etc/quadlets/postgresql/config.env
 
+# Use our entrypoint script to upgrade the database
+Entrypoint=/usr/local/bin/upgrade.sh
+User=postgres
+
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+Volume=/etc/quadlets/postgresql/upgrade.sh:/usr/local/bin/upgrade.sh:z,ro
 
 [Service]
 Restart=no
