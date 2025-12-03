@@ -16,6 +16,7 @@ TARGET_SYSTEMD_FILES = $(addprefix /etc/systemd/system/, $(SYSTEMD_FILES))
 TARGET_CONFIG_FILES = $(patsubst config/%, /etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
 
 pre-requisites:
+	@test -n "$(PARENT_DIR)" || (echo "Do not run this Makefile from the top directory!" >&2; exit 1)
 	@test "$$(id -u)" -eq 0 || (echo "This Makefile must be run as root" >&2; exit 1)
 
 all: install
