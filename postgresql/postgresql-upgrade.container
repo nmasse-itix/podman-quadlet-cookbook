@@ -27,7 +27,12 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 
 # Use our entrypoint script to upgrade the database
 Entrypoint=/usr/local/bin/upgrade.sh
+
+# No need for root privileges
 User=postgres
+
+# Set PostgreSQL command line arguments
+Exec=${POSTGRES_ARGS}
 
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z

@@ -144,6 +144,10 @@ fi
 unset PGPASSWORD
 docker_temp_server_stop
 
+# Remove old data directory
+echo "Removing old PostgreSQL data directory: ${SOURCE_PGDATA}"
+rm -rf "${SOURCE_PGDATA}"
+
 # Clean up lock files
 rm -f "${SOURCE_PGDATA}/upgrade_in_progress.lock"
 echo "PostgreSQL upgrade from version ${SOURCE_MAJOR_VERSION} to ${TARGET_MAJOR_VERSION} completed successfully."

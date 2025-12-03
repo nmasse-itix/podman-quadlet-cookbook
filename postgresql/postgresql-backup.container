@@ -19,6 +19,8 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 
 # Use a custom backup script
 Entrypoint=/usr/local/bin/backup.sh
+
+# No need for root privileges
 User=postgres
 
 # Volume mounts

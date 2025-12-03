@@ -34,6 +34,12 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
 
+# Set PostgreSQL command line arguments
+Exec=${POSTGRES_ARGS}
+
+# No need for root privileges
+User=postgres
+
 # Health check
 HealthCmd=pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -p $PGPORT
 HealthInterval=30s

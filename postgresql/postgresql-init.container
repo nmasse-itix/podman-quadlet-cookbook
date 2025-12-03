@@ -29,9 +29,16 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 # Use our entrypoint script to initialize the database
 Entrypoint=/usr/local/bin/init.sh
 
+# Set PostgreSQL command line arguments
+Exec=${POSTGRES_ARGS}
+
+# No need for root privileges
+User=postgres
+
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
 Volume=/etc/quadlets/postgresql/init.sh:/usr/local/bin/init.sh:z,ro
+Volume=/etc/quadlets/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:z,ro
 
 [Service]
 Restart=no
