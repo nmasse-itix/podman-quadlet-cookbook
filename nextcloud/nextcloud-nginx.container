@@ -1,0 +1,42 @@
+[Unit]
+Description=Nextcloud Nginx Reverse Proxy
+Documentation=https://hub.docker.com/r/nginxinc/nginx-unprivileged/
+After=network.target nextcloud-app.service
+Requires=nextcloud-app.service
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=nextcloud.target
+
+[Container]
+ContainerName=nextcloud-nginx
+Image=docker.io/nginxinc/nginx-unprivileged:1.20-alpine
+
+# Network configuration
+Network=host
+AddCapability=CAP_NET_BIND_SERVICE
+
+# Run with the same UID/GID as PHP-FPM
+User=82:82
+
+# Volume mounts
+Volume=/var/lib/quadlets/nextcloud/data:/var/www/html:z
+Volume=/etc/quadlets/nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
+
+# Health check (equivalent to readiness probe)
+HealthCmd=curl -sSfL http://localhost/status.php
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+[Install]
+WantedBy=nextcloud.target

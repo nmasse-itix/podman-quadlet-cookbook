@@ -1,0 +1,13 @@
+[Unit]
+Description=Nextcloud Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target nextcloud-redis.service nextcloud-app.service nextcloud-nginx.service
+After=postgresql.target nextcloud-redis.service nextcloud-app.service nextcloud-nginx.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+[Install]
+WantedBy=multi-user.target

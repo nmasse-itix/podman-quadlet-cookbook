@@ -1,0 +1,47 @@
+[Unit]
+Description=Redis Cache for Nextcloud
+Documentation=https://redis.io/
+After=network.target 
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=nextcloud.target
+
+[Container]
+ContainerName=nextcloud-redis
+Image=docker.io/library/redis:8-alpine
+
+# Network configuration
+Network=host
+
+# Redis configuration with authentication
+Exec=redis-server /usr/local/etc/redis/redis.conf
+
+# Environment variables
+Environment=REDISCLI_AUTH=${REDIS_HOST_PASSWORD}
+
+# Volume mounts for data persistence
+Volume=/var/lib/quadlets/nextcloud/redis:/data:Z
+Volume=/etc/quadlets/nextcloud/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+# Health check
+HealthCmd=redis-cli ping -t 5 | grep -q PONG
+HealthInterval=30s
+HealthTimeout=5s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# Skaffold filesystem + fix permissions
+ExecStartPre=/bin/bash -Eeuo pipefail -c 'install -m 0755 -o 0 -g 0 -d /var/lib/quadlets/nextcloud ; \
+    install -m 0700 -o 0 -g 0 -d /var/lib/quadlets/nextcloud/redis'
+
+[Install]
+WantedBy=nextcloud.target
