@@ -1,5 +1,5 @@
-PARENT_DIR := ..
-include $(PARENT_DIR)/Makefile
+TOP_LEVEL_DIR := ..
+include $(TOP_LEVEL_DIR)/Makefile.common
 
 .PHONY: test
 

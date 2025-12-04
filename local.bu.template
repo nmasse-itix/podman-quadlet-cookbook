@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: core
+    ssh_authorized_keys:
+    - ssh-ed25519 REDACTED user@host
+    # mkpasswd --method=yescrypt -s
+    password_hash: "$y$REDACTED"

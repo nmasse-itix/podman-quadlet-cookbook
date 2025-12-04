@@ -35,9 +35,6 @@ TimeoutStartSec=30
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/nginx/config.env
 
-# Skaffold filesystem + fix permissions
-ExecStartPre=install -m 0755 -o root -g root -d /var/lib/quadlets/nginx
-
 # This container is a job - run once to completion
 Type=oneshot
 

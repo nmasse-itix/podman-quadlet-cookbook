@@ -1,0 +1,11 @@
+[Unit]
+Description=Nextcloud All-in-One - Configuration volume
+Documentation=https://github.com/nextcloud/all-in-one
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud-aio/config.env
+
+[Volume]
+
+[Install]
+WantedBy=nextcloud-aio.target

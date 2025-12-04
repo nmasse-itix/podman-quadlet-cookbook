@@ -1,5 +1,5 @@
-PARENT_DIR := ..
-include $(PARENT_DIR)/Makefile
+TOP_LEVEL_DIR := ..
+include $(TOP_LEVEL_DIR)/Makefile.common
 
 .PHONY: test test-set-pgmajor
 
@@ -7,6 +7,11 @@ PG_MAJOR_START ?= 14
 PG_MAJOR_LAST ?= 18
 test-set-pgmajor:
 	sed -i 's/^PG_MAJOR=.*/PG_MAJOR=$(PG_MAJOR_START)/' config/config.env
+
+$(TARGET_CHROOT)/var/lib/quadlets/postgresql/backup $(TARGET_CHROOT)/var/lib/quadlets/postgresql $(TARGET_CHROOT)/var/run/quadlets/postgresql:
+	install -m 0700 -o 70 -g 70 -d $@
+
+install-var: $(TARGET_CHROOT)/var/run/quadlets/postgresql $(TARGET_CHROOT)/var/lib/quadlets/postgresql $(TARGET_CHROOT)/var/lib/quadlets/postgresql/backup
 
 test: uninstall clean test-set-pgmajor install
 	@echo "Running PostgreSQL integration tests..."; \

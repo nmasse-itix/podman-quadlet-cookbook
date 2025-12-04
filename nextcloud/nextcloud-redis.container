@@ -39,9 +39,5 @@ RestartSec=5
 TimeoutStartSec=300
 TimeoutStopSec=30
 
-# Skaffold filesystem + fix permissions
-ExecStartPre=/bin/bash -Eeuo pipefail -c 'install -m 0755 -o 0 -g 0 -d /var/lib/quadlets/nextcloud ; \
-    install -m 0700 -o 0 -g 0 -d /var/lib/quadlets/nextcloud/redis'
-
 [Install]
 WantedBy=nextcloud.target

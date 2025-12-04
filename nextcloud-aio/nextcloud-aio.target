@@ -1,0 +1,13 @@
+[Unit]
+Description=Nextcloud Service Target
+Documentation=man:systemd.target(5)
+Requires=nextcloud-aio-mastercontainer.service nextcloud_aio_mastercontainer-volume.service
+After=nextcloud-aio-mastercontainer.service nextcloud_aio_mastercontainer-volume.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Nextcloud All-in-One has been configured
+ConditionPathExists=/etc/quadlets/nextcloud-aio/config.env
+
+[Install]
+WantedBy=multi-user.target

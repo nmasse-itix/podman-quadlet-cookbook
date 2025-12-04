@@ -1,0 +1,39 @@
+[Unit]
+Description=Nextcloud All-in-One
+Documentation=https://github.com/nextcloud/all-in-one
+After=network.target podman.socket nextcloud_aio_mastercontainer-volume.service
+Requires=podman.socket nextcloud_aio_mastercontainer-volume.service
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud-aio/config.env
+
+[Container]
+ContainerName=nextcloud-aio-mastercontainer
+Image=ghcr.io/nextcloud-releases/all-in-one:latest
+PodmanArgs=--privileged --sig-proxy=false
+
+# Can be removed when running behind a web server or reverse proxy (like Apache, Nginx, Caddy, Cloudflare Tunnel and else).
+# See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+PublishPort=80:80
+
+# This is the AIO interface, served via https and self-signed certificate.
+# See https://github.com/nextcloud/all-in-one#explanation-of-used-ports
+PublishPort=8080:8080
+
+# Can be removed when running behind a web server or reverse proxy (like Apache, Nginx, Caddy, Cloudflare Tunnel and else).
+# See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+PublishPort=8443:8443
+
+RunInit=true
+Volume=nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+Volume=/run/podman/podman.sock:/var/run/docker.sock:ro,z
+EnvironmentFile=/etc/quadlets/nextcloud-aio/config.env
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=600
+TimeoutStopSec=30
+
+[Install]
+WantedBy=nextcloud-aio.target

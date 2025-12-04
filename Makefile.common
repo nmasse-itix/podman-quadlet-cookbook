@@ -1,0 +1,183 @@
+.PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun tail-logs butane help fcos-vm clean-vm console
+
+all: help
+help:
+	@echo "Available targets:"
+	@echo "  help           - Show this help message"
+	@echo "  install        - Install quadlets and systemd units"
+	@echo "  uninstall      - Uninstall quadlets and systemd units"
+	@echo "  clean          - Remove the quadlets persistent data and configuration"
+	@echo "  dryrun         - Perform a dry run of the podman systemd generator"
+	@echo "  tail-logs      - Tail the logs of the quadlet units"
+	@echo "  butane         - Build Butane specifications suitable for Fedora CoreOS"
+	@echo "  fcos-vm        - Launch a Fedora CoreOS VM with the generated Butane spec"
+	@echo "  clean-vm       - Clean up the Fedora CoreOS VM and its resources"
+	@echo "  console		- Connect to the Fedora CoreOS VM console"
+	
+
+TARGET_CHROOT ?= 
+PROJECT_NAME := $(shell basename "$${PWD}")
+QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build)
+SYSTEMD_FILES = $(wildcard *.service *.target *.timer)
+SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer)
+SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
+SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
+QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)) \
+					 $(patsubst %.volume, %-volume.service, $(wildcard *.volume)) \
+					 $(patsubst %.network, %-network.service, $(wildcard *.network)) \
+					 $(patsubst %.pod, %-pod.service, $(wildcard *.pod)) \
+					 $(patsubst %.build, %-build.service, $(wildcard *.build))
+CONFIG_FILES = $(wildcard config/*)
+TARGET_QUADLETS_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES))
+TARGET_SYSTEMD_FILES = $(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES))
+TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
+TARGET_FILES = $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+
+pre-requisites:
+	@if [ -z "$(TOP_LEVEL_DIR)" ]; then \
+	    echo "Do not run this Makefile from the top-level directory!" >&2; \
+		exit 1; \
+	fi ; \
+	if [ "$$(id -u)" -ne 0 ]; then \
+		echo "This Makefile must be run as root" >&2; \
+		exit 1; \
+	fi
+
+dryrun:
+	QUADLET_UNIT_DIRS="$$PWD" /usr/lib/systemd/system-generators/podman-system-generator -dryrun > /dev/null
+
+$(TARGET_CHROOT)/etc/containers/systemd:
+	install -D -d -m 0755 -o root -g root $@
+
+$(TARGET_CHROOT)/etc/systemd/system:
+	install -D -d -m 0755 -o root -g root $@
+
+$(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME):
+	install -D -d -m 0755 -o root -g root $@
+
+$(TARGET_CHROOT)/etc/containers/systemd/%.container: %.container $(TARGET_CHROOT)/etc/containers/systemd
+	install -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/containers/systemd/%.volume: %.volume $(TARGET_CHROOT)/etc/containers/systemd
+	install -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/containers/systemd/%.network: %.network $(TARGET_CHROOT)/etc/containers/systemd
+	install -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/containers/systemd/%.pod: %.pod $(TARGET_CHROOT)/etc/containers/systemd
+	install -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/containers/systemd/%.build: %.build $(TARGET_CHROOT)/etc/containers/systemd
+	install -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/systemd/system/%.service: %.service $(TARGET_CHROOT)/etc/systemd/system
+	install -D -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/systemd/system/%.target: %.target $(TARGET_CHROOT)/etc/systemd/system
+	install -D -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/systemd/system/%.timer: %.timer $(TARGET_CHROOT)/etc/systemd/system
+	install -D -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
+	@run() { echo $$*; "$$@"; }; \
+	if [ -x $< ]; then \
+		run install -D -m 0755 -o root -g root $< $@; \
+	else \
+		run install -D -m 0644 -o root -g root $< $@; \
+	fi
+
+$(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
+	install -d -m 0755 -o root -g root $@
+
+install-etc: $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+install-var: $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+
+install: pre-requisites dryrun install-etc install-var
+	systemctl daemon-reload
+	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
+	systemctl enable $(SYSTEMD_UNIT_NAMES)
+	systemctl start $(SYSTEMD_MAIN_UNIT_NAMES)
+
+uninstall: pre-requisites
+	systemctl --no-block disable $(SYSTEMD_UNIT_NAMES) || true
+	systemctl --no-block stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
+	rm -f $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+	systemctl daemon-reload
+
+tail-logs: pre-requisites
+	@run() { echo $$*; "$$@"; }; \
+	declare -a journalctl_args=( -f ); \
+	for unit in $(SYSTEMD_MAIN_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do \
+		journalctl_args+=( -u "$$unit" ); \
+	done; \
+	run journalctl "$${journalctl_args[@]}"
+
+$(PROJECT_NAME).bu: install-etc install-var
+	@if [ -z "$(TARGET_CHROOT)" ]; then \
+		echo "TARGET_CHROOT is not set!"; exit 1; \
+	fi
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
+
+$(PROJECT_NAME).ign: butane
+	butane --strict -o $(PROJECT_NAME).ign $(PROJECT_NAME).bu
+
+butane:
+	@run() { echo $$*; "$$@"; }; \
+	if [ -z "$(TARGET_CHROOT)" ]; then \
+		run $(MAKE) TARGET_CHROOT=$$(mktemp -d /tmp/butane-XXXXXX) $(PROJECT_NAME).bu; \
+	else \
+		run $(MAKE) $(PROJECT_NAME).bu; \
+	fi
+
+$(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
+	butane --strict -o $@ $<
+
+fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign
+	@run() { echo $$*; "$$@"; }; \
+	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
+	run cp $(filter %.ign,$^) $$tmp; \
+	run butane --strict -d $$tmp -o $@ fcos.bu; \
+	run rm -rf $$tmp
+
+/var/lib/libvirt/images/library/fedora-coreos.qcow2:
+	@run() { echo $$*; "$$@"; }; \
+	run mkdir -p /var/lib/libvirt/images/library/ ; \
+	if ! run coreos-installer download -p qemu -f qcow2.xz -d -C /var/lib/libvirt/images/library/ ; then \
+		echo "CoreOS QCOW2 image could not be downloaded." >&2; \
+		exit 1; \
+	fi ; \
+	qcow2=$$(ls -1ctr /var/lib/libvirt/images/library/fedora-coreos-*.qcow2 | tail -n 1) ; \
+	run mv "$$qcow2" $@
+
+/var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign: fcos.ign
+	install -D -o root -g root -m 0644 $< $@
+
+/var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2: /var/lib/libvirt/images/library/fedora-coreos.qcow2
+	install -D -o root -g root -m 0644 $< $@
+
+fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2
+	virt-install --name=$(PROJECT_NAME) --import --noautoconsole \
+		--ram=4096 --vcpus=2 --os-variant=fedora-coreos-stable \
+		--disk path=/var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2,format=qcow2,size=50 \
+		--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign" \
+		--network network=default,model=virtio \
+		--console=pty,target.type=virtio --serial=pty --graphics=none --boot=uefi
+
+clean-vm: pre-requisites
+	virsh destroy $(PROJECT_NAME) || true
+	virsh undefine $(PROJECT_NAME) --nvram || true
+	rm -rf /var/lib/libvirt/images/$(PROJECT_NAME)
+
+console: pre-requisites
+	@while sleep 2; do virsh console $(PROJECT_NAME); done
+
+clean: pre-requisites
+	rm -f *.butane
+	@run() { echo $$*; "$$@"; }; \
+	read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
+	if [ "$$ans" = "yes" ] || [ "$$ans" = "YES" ]; then \
+		run rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/; \
+	else \
+		echo "Aborted."; exit 1; \
+	fi

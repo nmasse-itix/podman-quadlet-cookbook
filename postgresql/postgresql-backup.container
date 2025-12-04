@@ -39,6 +39,3 @@ EnvironmentFile=/etc/quadlets/postgresql/config.env
 
 # This container is a job - run once to completion
 Type=oneshot
-
-# Skaffold filesystem + fix permissions
-ExecStartPre=install -m 0700 -o 70 -g 70 -d /var/lib/quadlets/postgresql/backup
