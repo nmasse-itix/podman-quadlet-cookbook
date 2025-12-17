@@ -1,6 +1,6 @@
 [Unit]
 Description=Redis Cache for Nextcloud
-Documentation=https://redis.io/
+Documentation=https://hub.docker.com/_/redis/
 After=network.target 
 
 # Only start if Nextcloud has been configured
@@ -27,7 +27,7 @@ Volume=/var/lib/quadlets/nextcloud/redis:/data:Z
 Volume=/etc/quadlets/nextcloud/redis.conf:/usr/local/etc/redis/redis.conf:ro
 
 # Health check
-HealthCmd=redis-cli ping -t 5 | grep -q PONG
+HealthCmd=redis-cli -t 5 ping | grep -qFx PONG
 HealthInterval=30s
 HealthTimeout=5s
 HealthStartPeriod=10s
@@ -38,6 +38,9 @@ Restart=always
 RestartSec=5
 TimeoutStartSec=300
 TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
 [Install]
 WantedBy=nextcloud.target

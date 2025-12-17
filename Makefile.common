@@ -1,4 +1,6 @@
-.PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun tail-logs butane help fcos-vm clean-vm console
+.PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun
+.PHONY: tail-logs butane help fcos-vm clean-vm console
+.PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 
 all: help
 help:
@@ -13,7 +15,6 @@ help:
 	@echo "  fcos-vm        - Launch a Fedora CoreOS VM with the generated Butane spec"
 	@echo "  clean-vm       - Clean up the Fedora CoreOS VM and its resources"
 	@echo "  console		- Connect to the Fedora CoreOS VM console"
-	
 
 TARGET_CHROOT ?= 
 PROJECT_NAME := $(shell basename "$${PWD}")
@@ -28,10 +29,17 @@ QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)
 					 $(patsubst %.pod, %-pod.service, $(wildcard *.pod)) \
 					 $(patsubst %.build, %-build.service, $(wildcard *.build))
 CONFIG_FILES = $(wildcard config/*)
+TMPFILESD_FILES = $(wildcard tmpfiles.d/*)
+SYSCTLD_FILES = $(wildcard sysctl.d/*)
 TARGET_QUADLETS_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES))
 TARGET_SYSTEMD_FILES = $(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES))
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
 TARGET_FILES = $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(TMPFILESD_FILES))
+TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
+DEPENDENCIES ?= 
+I_KNOW_WHAT_I_AM_DOING ?= 
+DEPENDENCIES_IGNITION_FILES = $(shell for dep in $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign; done)
 
 pre-requisites:
 	@if [ -z "$(TOP_LEVEL_DIR)" ]; then \
@@ -53,6 +61,12 @@ $(TARGET_CHROOT)/etc/systemd/system:
 	install -D -d -m 0755 -o root -g root $@
 
 $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME):
+	install -D -d -m 0755 -o root -g root $@
+
+$(TARGET_CHROOT)/etc/tmpfiles.d:
+	install -D -d -m 0755 -o root -g root $@
+
+$(TARGET_CHROOT)/etc/sysctl.d:
 	install -D -d -m 0755 -o root -g root $@
 
 $(TARGET_CHROOT)/etc/containers/systemd/%.container: %.container $(TARGET_CHROOT)/etc/containers/systemd
@@ -90,25 +104,58 @@ $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/q
 $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
 	install -d -m 0755 -o root -g root $@
 
-install-etc: $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+$(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
+	install -D -m 0644 -o root -g root $< $@
+
+$(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
+	install -D -m 0644 -o root -g root $< $@
+
+install-etc: $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
 install-var: $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
 
-install: pre-requisites dryrun install-etc install-var
+install-pre::
+	@run() { echo $$*; "$$@"; }; \
+    for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install; \
+	done
+
+install-post::
+install: pre-requisites dryrun install-etc install-var install-pre
 	systemctl daemon-reload
 	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
-	systemctl enable $(SYSTEMD_UNIT_NAMES)
+	@run() { echo $$*; "$$@"; }; \
+	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
+		run systemd-tmpfiles --create /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
+	fi; \
+	if [ -f /etc/sysctl.d/$(PROJECT_NAME).conf ]; then \
+		run sysctl -q -p /etc/sysctl.d/$(PROJECT_NAME).conf; \
+	fi
+	systemctl enable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES)
 	systemctl start $(SYSTEMD_MAIN_UNIT_NAMES)
+	$(MAKE) install-post
 
-uninstall: pre-requisites
-	systemctl --no-block disable $(SYSTEMD_UNIT_NAMES) || true
-	systemctl --no-block stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
+uninstall-pre::
+uninstall-post::
+	@run() { echo $$*; "$$@"; }; \
+    for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep uninstall; \
+	done
+
+uninstall: pre-requisites uninstall-pre
+	systemctl disable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) || true
+	systemctl stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
+	@run() { echo $$*; "$$@"; }; \
+	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
+		run systemd-tmpfiles --purge /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
+	fi
 	rm -f $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
 	systemctl daemon-reload
+	$(MAKE) uninstall-post
 
 tail-logs: pre-requisites
 	@run() { echo $$*; "$$@"; }; \
 	declare -a journalctl_args=( -f ); \
-	for unit in $(SYSTEMD_MAIN_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do \
+	for unit in $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do \
 		journalctl_args+=( -u "$$unit" ); \
 	done; \
 	run journalctl "$${journalctl_args[@]}"
@@ -133,7 +180,12 @@ butane:
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
-fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign
+# Because we don't know how to build this file, it is safer to declare it as phony and let the Makefile of the dependency handle it.
+.PHONY: $(DEPENDENCIES_IGNITION_FILES)
+$(DEPENDENCIES_IGNITION_FILES):
+	$(MAKE) -C $(dir $@) $(notdir $@)
+
+fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
 	@run() { echo $$*; "$$@"; }; \
 	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
 	run cp $(filter %.ign,$^) $$tmp; \
@@ -170,14 +222,23 @@ clean-vm: pre-requisites
 	rm -rf /var/lib/libvirt/images/$(PROJECT_NAME)
 
 console: pre-requisites
-	@while sleep 2; do virsh console $(PROJECT_NAME); done
+	@while sleep 2; do virsh console $(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
 
-clean: pre-requisites
+clean-pre::
+	@run() { echo $$*; "$$@"; }; \
+    for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep clean; \
+	done
+
+clean-post::
+clean: clean-pre pre-requisites
 	rm -f *.butane
 	@run() { echo $$*; "$$@"; }; \
-	read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
-	if [ "$$ans" = "yes" ] || [ "$$ans" = "YES" ]; then \
-		run rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/; \
-	else \
-		echo "Aborted."; exit 1; \
+	if [ "$(I_KNOW_WHAT_I_AM_DOING)" != "yes" ]; then \
+		read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
+		if [ "$$ans" != "yes" ] && [ "$$ans" != "YES" ]; then \
+			echo "Aborted."; exit 1; \
+		fi; \
 	fi
+	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
+	$(MAKE) clean-post

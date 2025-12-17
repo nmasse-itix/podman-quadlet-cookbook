@@ -1,19 +1,20 @@
 [Unit]
-Description=Nextcloud PHP-FPM Application
+Description=Nextcloud Application - Initialization
 Documentation=https://hub.docker.com/_/nextcloud/
-After=network.target nextcloud-redis.service postgresql-server.service nextcloud-upgrade.service
-Requires=nextcloud-redis.service postgresql-server.service nextcloud-upgrade.service
+After=network.target nextcloud-redis.service postgresql-server.service
+Before=nextcloud-app.service
+Requires=nextcloud-redis.service postgresql-server.service
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env
-# and initialized (config.php exists)
-ConditionPathExists=/var/lib/quadlets/nextcloud/data/config/config.php
+# and NOT initialized (config.php does NOT exist)
+ConditionPathExists=!/var/lib/quadlets/nextcloud/data/config/config.php
 
 # Start/stop this unit when the target is started/stopped
-PartOf=nextcloud.target
+#PartOf=nextcloud.target
 
 [Container]
-ContainerName=nextcloud-app
+ContainerName=nextcloud-init-job
 Image=docker.io/library/nextcloud:${NEXTCLOUD_MAJOR}-fpm-alpine
 
 # Fix the UID/GID of the PHP-FPM daemon
@@ -21,37 +22,33 @@ User=82:82
 
 # Network configuration
 Network=host
-AddCapability=CAP_NET_BIND_SERVICE
 
-# Environment variables from secrets and config
+# Environment variables from config
 EnvironmentFile=/etc/quadlets/nextcloud/config.env
+
+# This is specific to the initialization container
+Environment=NEXTCLOUD_UPDATE=1
+Exec=/bin/true
 
 # Volume mounts
 Volume=/var/lib/quadlets/nextcloud/data:/var/www/html:z
 Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
 Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
-Volume=/etc/quadlets/nextcloud/custom-noinit.sh:/docker-entrypoint-hooks.d/pre-installation/custom.sh:z,ro
-
-# Health check (equivalent to readiness probe)
-HealthCmd=nc -z localhost 9000
-HealthInterval=30s
-HealthTimeout=10s
-HealthStartPeriod=60s
-HealthRetries=3
 
 [Service]
-Restart=always
-RestartSec=10
+Restart=no
 TimeoutStartSec=600
-TimeoutStopSec=30
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
-# Wait for PostgreSQL to be ready on localhost
+# This container is a job - run once to completion
+Type=oneshot
+
+# Wait for PostgreSQL to be ready
 ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
 
-# Wait for Redis to be ready on localhost
+# Wait for Redis to be ready
 ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/6379; then echo "Waiting for Redis to be available..."; sleep 5; else exit 0; fi; done; exit 1'
 
 [Install]

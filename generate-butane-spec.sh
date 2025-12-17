@@ -35,9 +35,9 @@ for file in $(find "$TARGET_CHROOT" \! -type d); do
     group:
       id: $(stat -c '%g' "$file")
     contents:
-      compression: gzip
-      source: data:;base64,$(gzip -c "$file" | base64 -w0)
+      inline: |
 EOF
+    sed 's/^/        /; $s/$/\n/' "$file"
 done
 cat <<"EOF"
   directories:
@@ -45,8 +45,10 @@ EOF
 for dir in $(find "$TARGET_CHROOT" -type d); do
     rel_path="${dir#$TARGET_CHROOT}"
     if [[ "$rel_path" != "/var/lib/quadlets/"* ]] && [[ "$rel_path" != "/etc/quadlets/"* ]] \
-        && [[ "$rel_path" != "/etc/systemd/system/"* ]] && [[ "$rel_path" != "/etc/containers/systemd/"* ]]; then
+        && [[ "$rel_path" != "/etc/systemd/system/"* ]] && [[ "$rel_path" != "/etc/containers/systemd/"* ]] \
+        && [[ "$rel_path" != "/etc/tmpfiles.d/"* ]] && [[ "$rel_path" != "/etc/sysctl.d/"* ]]; then
 
+      # Skip files & directories that are already part of the CoreOS default installation
       continue
     fi
     cat <<EOF

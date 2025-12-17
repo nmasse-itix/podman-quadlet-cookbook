@@ -7,6 +7,7 @@ This repository gathers all the recipes (hence the name "Cookbook") to deploy Op
 
 - [nginx](nginx/): starts Nginx, content is initialized / updated from a GIT repository
 - [postgresql](postgresql/): starts a PostgreSQL server, handles automated major upgrades, periodic backup and initialization of the database from the last backup.
+- [nextcloud](nextcloud/): starts a Nextcloud server with all its dependencies, handles automated upgrades.
 
 ## License
 

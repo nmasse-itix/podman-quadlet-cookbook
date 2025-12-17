@@ -1,0 +1,12 @@
+[Unit]
+Description=Nextcloud Application - Initialization
+Documentation=https://hub.docker.com/_/nextcloud/
+PartOf=nextcloud.target
+
+[Timer]
+OnActiveSec=15min
+RandomizedDelaySec=15s
+DeferReactivation=true
+
+[Install]
+WantedBy=nextcloud.target

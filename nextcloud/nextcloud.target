@@ -1,8 +1,9 @@
 [Unit]
 Description=Nextcloud Service Target
 Documentation=man:systemd.target(5)
-Requires=postgresql.target nextcloud-redis.service nextcloud-app.service nextcloud-nginx.service
-After=postgresql.target nextcloud-redis.service nextcloud-app.service nextcloud-nginx.service
+Requires=postgresql.target nextcloud-redis.service nextcloud-nginx.service nextcloud-app.service nextcloud-upgrade.service nextcloud-cron.timer
+After=postgresql.target nextcloud-redis.service nextcloud-nginx.service nextcloud-app.service nextcloud-upgrade.service
+Before=nextcloud-cron.timer
 
 # Allow isolation - can stop/start this target independently
 AllowIsolate=yes

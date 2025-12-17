@@ -29,7 +29,7 @@ Volume=/etc/quadlets/nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
 HealthCmd=curl -sSfL http://localhost/status.php
 HealthInterval=30s
 HealthTimeout=10s
-HealthStartPeriod=30s
+HealthStartPeriod=10s
 HealthRetries=3
 
 [Service]

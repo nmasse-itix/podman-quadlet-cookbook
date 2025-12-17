@@ -27,8 +27,8 @@ User=postgres
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
 Volume=/etc/quadlets/postgresql/backup.sh:/usr/local/bin/backup.sh:z,ro
 
-# Share /var/run/postgresql/ between containers in the pod for the Unix socket
-Volume=/var/run/quadlets/postgresql:/var/run/postgresql:z
+# Share /run/postgresql/ between containers in the pod for the Unix socket
+Volume=/run/quadlets/postgresql:/var/run/postgresql:z
 
 [Service]
 Restart=no

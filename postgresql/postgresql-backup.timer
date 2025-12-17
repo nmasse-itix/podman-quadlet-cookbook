@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL Database Backup Timer
+Documentation=https://hub.docker.com/_/postgresql/
+PartOf=postgresql.target
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=postgresql.target
