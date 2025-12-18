@@ -1,5 +1,5 @@
 .PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun
-.PHONY: tail-logs butane help fcos-vm clean-vm console
+.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 
 all: help
@@ -40,6 +40,8 @@ TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $
 DEPENDENCIES ?= 
 I_KNOW_WHAT_I_AM_DOING ?= 
 DEPENDENCIES_IGNITION_FILES = $(shell for dep in $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign; done)
+PROJECT_UID ?= 0
+PROJECT_GID ?= 0
 
 pre-requisites:
 	@if [ -z "$(TOP_LEVEL_DIR)" ]; then \
@@ -61,7 +63,7 @@ $(TARGET_CHROOT)/etc/systemd/system:
 	install -D -d -m 0755 -o root -g root $@
 
 $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME):
-	install -D -d -m 0755 -o root -g root $@
+	install -D -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
 $(TARGET_CHROOT)/etc/tmpfiles.d:
 	install -D -d -m 0755 -o root -g root $@
@@ -78,13 +80,13 @@ $(TARGET_CHROOT)/etc/systemd/system/%: % $(TARGET_CHROOT)/etc/systemd/system
 $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 	@run() { echo $$*; "$$@"; }; \
 	if [ -x $< ]; then \
-		run install -D -m 0755 -o root -g root $< $@; \
+		run install -D -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 	else \
-		run install -D -m 0644 -o root -g root $< $@; \
+		run install -D -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 	fi
 
 $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
-	install -d -m 0755 -o root -g root $@
+	install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
 $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
 	install -D -m 0644 -o root -g root $< $@
@@ -137,7 +139,7 @@ uninstall: pre-requisites uninstall-pre
 tail-logs: pre-requisites
 	@run() { echo $$*; "$$@"; }; \
 	declare -a journalctl_args=( -f ); \
-	for unit in $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do \
+	for unit in $$($(MAKE) -s units 2>/dev/null | sort -u); do \
 		journalctl_args+=( -u "$$unit" ); \
 	done; \
 	run journalctl "$${journalctl_args[@]}"
@@ -212,11 +214,19 @@ clean-vm: pre-requisites
 console: pre-requisites
 	@while sleep 2; do virsh console fcos-$(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
 
+units-pre::
+	@for dep in $(DEPENDENCIES); do \
+		$(MAKE) -s -C $(TOP_LEVEL_DIR)/$$dep units 2>/dev/null; \
+	done
+units: units-pre
+	@for unit in $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do echo "$$unit"; done
+
 clean-pre::
 	@run() { echo $$*; "$$@"; }; \
     for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep clean; \
 	done
+
 
 clean-post::
 clean: clean-pre pre-requisites

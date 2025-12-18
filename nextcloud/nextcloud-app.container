@@ -1,13 +1,13 @@
 [Unit]
 Description=Nextcloud PHP-FPM Application
 Documentation=https://hub.docker.com/_/nextcloud/
-After=network.target nextcloud-redis.service postgresql-server.service nextcloud-upgrade.service
-Requires=nextcloud-redis.service postgresql-server.service nextcloud-upgrade.service
+After=network.target nextcloud-redis.service postgresql-server.service nextcloud-init.service nextcloud-upgrade.service var-lib-virtiofs-data.mount
+Requires=nextcloud-redis.service postgresql-server.service nextcloud-init.service nextcloud-upgrade.service var-lib-virtiofs-data.mount
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env
 # and initialized (config.php exists)
-ConditionPathExists=/var/lib/quadlets/nextcloud/data/config/config.php
+ConditionPathExists=/var/lib/virtiofs/data/nextcloud/config/config.php
 
 # Start/stop this unit when the target is started/stopped
 PartOf=nextcloud.target
@@ -16,8 +16,17 @@ PartOf=nextcloud.target
 ContainerName=nextcloud-app
 Image=docker.io/library/nextcloud:${NEXTCLOUD_MAJOR}-fpm-alpine
 
-# Fix the UID/GID of the PHP-FPM daemon
-User=82:82
+# No need for root privileges
+User=www-data
+Group=www-data
+
+# UID/GID mapping to map the www-data (82) user inside the container to arbitrary user 10008 / group 10000 on the host
+UIDMap=0:1000000:82
+UIDMap=82:10008:1
+UIDMap=83:1000083:65453
+GIDMap=0:1000000:82
+GIDMap=82:10000:1
+GIDMap=83:1000083:65453
 
 # Network configuration
 Network=host
@@ -27,8 +36,7 @@ AddCapability=CAP_NET_BIND_SERVICE
 EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
 # Volume mounts
-Volume=/var/lib/quadlets/nextcloud/data:/var/www/html:z
-Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html/data:z
+Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
 Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
 Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
 Volume=/etc/quadlets/nextcloud/custom-noinit.sh:/docker-entrypoint-hooks.d/pre-installation/custom.sh:z,ro

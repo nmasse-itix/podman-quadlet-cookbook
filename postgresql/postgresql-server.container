@@ -39,6 +39,18 @@ Exec=${POSTGRES_ARGS}
 
 # No need for root privileges
 User=postgres
+Group=postgres
+
+# UID/GID mapping to map the postgres (70) user inside the container to arbitrary user 10004 / group 10000 on the host
+UIDMap=0:1000000:70
+UIDMap=70:10004:1
+UIDMap=71:1000071:65465
+GIDMap=0:1000000:70
+GIDMap=70:10000:1
+GIDMap=71:1000071:65465
+
+# Avoid issues with built-in volumes being created by root
+PodmanArgs=--image-volume=ignore
 
 # Health check
 HealthCmd=pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -p $PGPORT

@@ -3,6 +3,7 @@ version: 1.4.0
 ignition:
   config:
     merge:
+    - local: virtiofs.ign
     - local: nextcloud.ign
     - local: postgresql.ign
     - local: local.ign

@@ -1,8 +1,8 @@
 [Unit]
 Description=PostgreSQL Database Server - Backup
 Documentation=https://hub.docker.com/_/postgres/
-After=network.target postgresql-server.service
-Requires=postgresql-server.service
+After=network.target postgresql-server.service var-lib-virtiofs-data.mount
+Requires=postgresql-server.service var-lib-virtiofs-data.mount
 
 # Start/stop this unit when the target is started/stopped
 PartOf=postgresql.target
@@ -22,6 +22,18 @@ Entrypoint=/usr/local/bin/backup.sh
 
 # No need for root privileges
 User=postgres
+Group=postgres
+
+# UID/GID mapping to map the postgres (70) user inside the container to arbitrary user 10004 / group 10000 on the host
+UIDMap=0:1000000:70
+UIDMap=70:10004:1
+UIDMap=71:1000071:65465
+GIDMap=0:1000000:70
+GIDMap=70:10000:1
+GIDMap=71:1000071:65465
+
+# Avoid issues with built-in volumes being created by root
+PodmanArgs=--image-volume=ignore
 
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z

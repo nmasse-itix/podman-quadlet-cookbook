@@ -1,8 +1,8 @@
 [Unit]
 Description=Nextcloud Nginx Reverse Proxy
 Documentation=https://hub.docker.com/r/nginxinc/nginx-unprivileged/
-After=network.target nextcloud-app.service
-Requires=nextcloud-app.service
+After=network.target nextcloud-app.service var-lib-virtiofs-data.mount
+Requires=nextcloud-app.service var-lib-virtiofs-data.mount
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env
@@ -12,17 +12,26 @@ PartOf=nextcloud.target
 
 [Container]
 ContainerName=nextcloud-nginx
-Image=docker.io/nginxinc/nginx-unprivileged:1.20-alpine
+Image=docker.io/nginxinc/nginx-unprivileged:${NGINX_MAJOR}-alpine
 
 # Network configuration
 Network=host
 AddCapability=CAP_NET_BIND_SERVICE
 
-# Run with the same UID/GID as PHP-FPM
-User=82:82
+# No need for root privileges
+User=nginx
+Group=nginx
+
+# UID/GID mapping to map the nginx (101) user inside the container to arbitrary user 10008 / group 10000 on the host
+UIDMap=0:1000000:101
+UIDMap=101:10008:1
+UIDMap=102:1000102:65434
+GIDMap=0:1000000:101
+GIDMap=101:10000:1
+GIDMap=102:1000102:65434
 
 # Volume mounts
-Volume=/var/lib/quadlets/nextcloud/data:/var/www/html:z
+Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
 Volume=/etc/quadlets/nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
 
 # Health check (equivalent to readiness probe)
@@ -37,6 +46,9 @@ Restart=always
 RestartSec=5
 TimeoutStartSec=300
 TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
 [Install]
 WantedBy=nextcloud.target

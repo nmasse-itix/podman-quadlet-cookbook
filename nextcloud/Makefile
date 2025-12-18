@@ -1,5 +1,13 @@
-# Also depends on virtiofs for data storage but is a transitive dependency via postgresql
+##
+## Makefile for PostgreSQL quadlet
+##
+
+# Project dependencies: Nextcloud also depends on virtiofs for data storage but is a transitive dependency via postgresql
 DEPENDENCIES = postgresql
+
+# Nextcloud quadlet is mapped to the 10008 user (nextcloud) and 10000 group (itix-svc)
+PROJECT_UID = 10008
+PROJECT_GID = 10000
 
 TOP_LEVEL_DIR := ..
 include $(TOP_LEVEL_DIR)/Makefile.common
@@ -12,17 +20,17 @@ test-set-nextcloud-major:
 	sed -i 's/^NEXTCLOUD_MAJOR=.*/NEXTCLOUD_MAJOR=$(NEXTCLOUD_MAJOR_START)/' config/config.env
 
 $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis:
-	install -m 0700 -o 0 -g 0 -d $@
+	install -m 0700 -o 10008 -g 10000 -d $@
 
 $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config:
-	install -m 0700 -o 82 -g 82 -d $@
+	install -m 0700 -o 10008 -g 10000 -d $@
 
 $(TARGET_CHROOT)/etc/quadlets/nextcloud/www.conf: config/www.conf
-	install -m 0755 -o 82 -g 82 -D $< $@
+	install -m 0755 -o 10008 -g 10000 -D $< $@
 
 install-var: $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config
 
-test: uninstall clean test-set-nextcloud-major install
+test: 
 	@run() { echo $$*; "$$@"; }; \
 	echo "Running Nextcloud upgrade test..."; \
 	set -Eeuo pipefail; \
@@ -39,10 +47,12 @@ test: uninstall clean test-set-nextcloud-major install
 	run curl -X GET -sSf -u "$${NEXTCLOUD_ADMIN_USER}:$${NEXTCLOUD_ADMIN_PASSWORD}" "$${OVERWRITECLIURL}/remote.php/webdav/witness.txt" -o /tmp/witness.txt; \
 	if run cmp -s tests/witness.txt /tmp/witness.txt ; then \
 		echo "File upload verified successfully!"; \
+		rm -f /tmp/witness.txt; \
 	else \
 		echo "File upload verification failed!"; \
 		exit 1; \
 	fi; \
+	exit 1; \
 	sleep 2; \
 	for (( ver=$(NEXTCLOUD_MAJOR_START); ver<$(NEXTCLOUD_MAJOR_LAST); ver++ )); do \
 		nextver=$$(($$ver + 1)); \
@@ -61,6 +71,7 @@ test: uninstall clean test-set-nextcloud-major install
 		run curl -X GET -sSf -u "$${NEXTCLOUD_ADMIN_USER}:$${NEXTCLOUD_ADMIN_PASSWORD}" "$${OVERWRITECLIURL}/remote.php/webdav/witness.txt" -o /tmp/witness.txt; \
 		if run cmp -s tests/witness.txt /tmp/witness.txt ; then \
 			echo "File upload verified successfully after upgrade!"; \
+			rm -f /tmp/witness.txt; \
 		else \
 			echo "File upload verification failed after upgrade!"; \
 			exit 1; \
