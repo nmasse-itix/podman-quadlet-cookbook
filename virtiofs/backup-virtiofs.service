@@ -1,0 +1,22 @@
+[Unit]
+Description=Backup the "data" virtio filesystems
+Before=var-lib-virtiofs-data.mount
+RequiresMountsFor=/var
+ConditionPathIsMountPoint=!/var/lib/virtiofs/data
+
+# Unless DefaultDependencies= is set to false, service units will implicitly
+# have dependencies of type Requires= and After= on basic.target as well as
+# dependencies of type Conflicts= and Before= on shutdown.target.
+#
+# So, we need to set DefaultDependencies to "no" to break the ordering cycle.
+DefaultDependencies=no
+
+# Only run on Fedora CoreOS
+ConditionOSRelease=ID=fedora
+ConditionOSRelease=VARIANT_ID=coreos
+
+[Service]
+Type=oneshot
+UMask=077
+ExecStart=/bin/bash -Eeuo pipefail -c 'if grep -q "data /var/lib/virtiofs/data" /proc/mounts; then echo "ERROR: /var/lib/virtiofs/data is mounted!"; exit 1; else tar -cf /var/lib/private/virtiofs.tar -C /var/lib/virtiofs/data .; fi'
+RemainAfterExit=yes

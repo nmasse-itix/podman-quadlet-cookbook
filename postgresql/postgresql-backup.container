@@ -25,6 +25,7 @@ User=postgres
 
 # Volume mounts
 Volume=/var/lib/quadlets/postgresql:/var/lib/postgresql:z
+Volume=/var/lib/virtiofs/data/postgresql/backup:/var/lib/postgresql/backup:z
 Volume=/etc/quadlets/postgresql/backup.sh:/usr/local/bin/backup.sh:z,ro
 
 # Share /run/postgresql/ between containers in the pod for the Unix socket

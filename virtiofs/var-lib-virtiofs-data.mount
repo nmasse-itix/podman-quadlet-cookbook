@@ -1,0 +1,19 @@
+[Unit]
+Description=Mount the "data" virtio filesystem
+After=backup-virtiofs.service
+Requires=backup-virtiofs.service
+Before=restore-virtiofs.service
+Wants=restore-virtiofs.service
+
+# Only run on Fedora CoreOS
+ConditionOSRelease=ID=fedora
+ConditionOSRelease=VARIANT_ID=coreos
+
+[Mount]
+What=data
+Where=/var/lib/virtiofs/data
+Type=virtiofs
+Options=context=system_u:object_r:container_file_t:s0
+
+[Install]
+WantedBy=local-fs.target

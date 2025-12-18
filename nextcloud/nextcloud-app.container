@@ -28,6 +28,7 @@ EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
 # Volume mounts
 Volume=/var/lib/quadlets/nextcloud/data:/var/www/html:z
+Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html/data:z
 Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
 Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
 Volume=/etc/quadlets/nextcloud/custom-noinit.sh:/docker-entrypoint-hooks.d/pre-installation/custom.sh:z,ro

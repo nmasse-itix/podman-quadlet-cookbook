@@ -19,8 +19,8 @@ help:
 TARGET_CHROOT ?= 
 PROJECT_NAME := $(shell basename "$${PWD}")
 QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build)
-SYSTEMD_FILES = $(wildcard *.service *.target *.timer)
-SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer)
+SYSTEMD_FILES = $(wildcard *.service *.target *.timer *.mount)
+SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer *.mount)
 SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
 SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
 QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)) \
@@ -69,29 +69,11 @@ $(TARGET_CHROOT)/etc/tmpfiles.d:
 $(TARGET_CHROOT)/etc/sysctl.d:
 	install -D -d -m 0755 -o root -g root $@
 
-$(TARGET_CHROOT)/etc/containers/systemd/%.container: %.container $(TARGET_CHROOT)/etc/containers/systemd
+$(TARGET_CHROOT)/etc/containers/systemd/%: % $(TARGET_CHROOT)/etc/containers/systemd
 	install -m 0644 -o root -g root $< $@
 
-$(TARGET_CHROOT)/etc/containers/systemd/%.volume: %.volume $(TARGET_CHROOT)/etc/containers/systemd
+$(TARGET_CHROOT)/etc/systemd/system/%: % $(TARGET_CHROOT)/etc/systemd/system
 	install -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/containers/systemd/%.network: %.network $(TARGET_CHROOT)/etc/containers/systemd
-	install -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/containers/systemd/%.pod: %.pod $(TARGET_CHROOT)/etc/containers/systemd
-	install -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/containers/systemd/%.build: %.build $(TARGET_CHROOT)/etc/containers/systemd
-	install -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/systemd/system/%.service: %.service $(TARGET_CHROOT)/etc/systemd/system
-	install -D -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/systemd/system/%.target: %.target $(TARGET_CHROOT)/etc/systemd/system
-	install -D -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/systemd/system/%.timer: %.timer $(TARGET_CHROOT)/etc/systemd/system
-	install -D -m 0644 -o root -g root $< $@
 
 $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 	@run() { echo $$*; "$$@"; }; \
@@ -202,27 +184,33 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_
 	qcow2=$$(ls -1ctr /var/lib/libvirt/images/library/fedora-coreos-*.qcow2 | tail -n 1) ; \
 	run mv "$$qcow2" $@
 
-/var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign: fcos.ign
+/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: fcos.ign
 	install -D -o root -g root -m 0644 $< $@
 
-/var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2: /var/lib/libvirt/images/library/fedora-coreos.qcow2
+/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2: /var/lib/libvirt/images/library/fedora-coreos.qcow2
 	install -D -o root -g root -m 0644 $< $@
 
-fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2
-	virt-install --name=$(PROJECT_NAME) --import --noautoconsole \
+/srv/fcos-$(PROJECT_NAME):
+	install -d -o root -g root -m 0755 $@
+
+fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2 /srv/fcos-$(PROJECT_NAME)
+	virt-install --name=fcos-$(PROJECT_NAME) --import --noautoconsole \
 		--ram=4096 --vcpus=2 --os-variant=fedora-coreos-stable \
-		--disk path=/var/lib/libvirt/images/$(PROJECT_NAME)/root.qcow2,format=qcow2,size=50 \
-		--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/lib/libvirt/images/$(PROJECT_NAME)/fcos.ign" \
+		--disk path=/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2,format=qcow2,size=50 \
+		--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign" \
 		--network network=default,model=virtio \
-		--console=pty,target.type=virtio --serial=pty --graphics=none --boot=uefi
+		--console=pty,target.type=virtio --serial=pty --graphics=none --boot=uefi \
+		--memorybacking=access.mode=shared,source.type=memfd \
+		--filesystem=type=mount,accessmode=passthrough,driver.type=virtiofs,driver.queue=1024,source.dir=/srv/fcos-$(PROJECT_NAME),target.dir=data
 
 clean-vm: pre-requisites
-	virsh destroy $(PROJECT_NAME) || true
-	virsh undefine $(PROJECT_NAME) --nvram || true
-	rm -rf /var/lib/libvirt/images/$(PROJECT_NAME)
+	virsh destroy fcos-$(PROJECT_NAME) || true
+	virsh undefine fcos-$(PROJECT_NAME) --nvram || true
+	rm -rf /var/lib/libvirt/images/fcos-$(PROJECT_NAME)
+	rm -rf /srv/fcos-$(PROJECT_NAME)
 
 console: pre-requisites
-	@while sleep 2; do virsh console $(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
+	@while sleep 2; do virsh console fcos-$(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
 
 clean-pre::
 	@run() { echo $$*; "$$@"; }; \

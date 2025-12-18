@@ -1,0 +1,11 @@
+[Unit]
+Description=Update Nginx root directory from a Git repository - Timer
+Documentation=https://hub.docker.com/r/alpine/git
+PartOf=nginx.target
+
+[Timer]
+OnActiveSec=15min
+RandomizedDelaySec=15s
+
+[Install]
+WantedBy=nginx.target

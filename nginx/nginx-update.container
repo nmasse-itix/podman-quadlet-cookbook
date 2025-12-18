@@ -40,4 +40,4 @@ EnvironmentFile=/etc/quadlets/nginx/config.env
 Type=oneshot
 
 [Install]
-WantedBy=nginx.target
+WantedBy=nginx.target nginx-update.timer

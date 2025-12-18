@@ -1,3 +1,4 @@
+# Also depends on virtiofs for data storage but is a transitive dependency via postgresql
 DEPENDENCIES = postgresql
 
 TOP_LEVEL_DIR := ..

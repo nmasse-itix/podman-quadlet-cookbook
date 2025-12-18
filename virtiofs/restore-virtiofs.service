@@ -1,0 +1,16 @@
+[Unit]
+Description=Restore the "data" virtio filesystems
+After=var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+RequiresMountsFor=/var
+ConditionPathIsMountPoint=/var/lib/virtiofs/data
+ConditionPathExists=/var/lib/private/virtiofs.tar
+
+# Only run on Fedora CoreOS
+ConditionOSRelease=ID=fedora
+ConditionOSRelease=VARIANT_ID=coreos
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -Eeuo pipefail -c 'if ! grep -q "data /var/lib/virtiofs/data" /proc/mounts; then echo "ERROR: /var/lib/virtiofs/data is NOT mounted!"; exit 1; else tar -xf /var/lib/private/virtiofs.tar -C /var/lib/virtiofs/data; rm -f /var/lib/private/virtiofs.tar; fi'
+RemainAfterExit=yes

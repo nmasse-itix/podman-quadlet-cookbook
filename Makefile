@@ -1,7 +1,7 @@
 SUBDIRS := $(wildcard */Makefile)
 SUBDIRS := $(dir $(SUBDIRS))
 
-.PHONY: all help butane clean dryrun fcos-vm $(SUBDIRS)
+.PHONY: all help butane clean dryrun fcos-vm clean-vm uninstall $(SUBDIRS)
 
 all: help
 help:
@@ -11,17 +11,14 @@ help:
 	@echo "  dryrun         - Perform a dry run of the podman systemd generator"
 	@echo "  fcos-vm        - Launch a Fedora CoreOS VM with the generated Butane spec"
 	@echo "  clean-vm       - Clean up the Fedora CoreOS VM and its resources"
+	@echo "  uninstall      - Uninstall the generated resources"
 
 dryrun: $(SUBDIRS)
 butane: $(SUBDIRS)
 clean: $(SUBDIRS)
 fcos-vm: $(SUBDIRS)
 clean-vm: $(SUBDIRS)
+uninstall: $(SUBDIRS)
 
 $(SUBDIRS):
-	@run() { echo $$*; "$$@"; }; \
-	if echo $(MAKECMDGOALS) | grep -Eq 'butane|fcos-vm'; then \
-		run $(MAKE) -C $@ $(MAKECMDGOALS); \
-	else \
-		run $(MAKE) -C $@ $(MAKECMDGOALS); \
-	fi
+	$(MAKE) -C $@ $(MAKECMDGOALS)
