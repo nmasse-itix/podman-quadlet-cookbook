@@ -18,12 +18,10 @@ User=1001
 Group=1001
 
 # UID/GID mapping to map the 1001 user inside the container to arbitrary user 10016 / group 10000 on the host
-UIDMap=0:1000000:1001
-UIDMap=1001:10016:1
-UIDMap=1002:1001002:64534
-GIDMap=0:1000000:1001
-GIDMap=1001:10000:1
-GIDMap=1002:1001002:64534
+UIDMap=0:1000000:65535
+UIDMap=+1001:10016:1
+GIDMap=0:1000000:65535
+GIDMap=+1001:10000:1
 
 # Security
 SeccompProfile=/etc/quadlets/nextcloud/collabora-seccomp-profile.json

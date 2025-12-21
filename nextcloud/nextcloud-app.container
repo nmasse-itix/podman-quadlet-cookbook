@@ -21,12 +21,10 @@ User=www-data
 Group=www-data
 
 # UID/GID mapping to map the www-data (82) user inside the container to arbitrary user 10008 / group 10000 on the host
-UIDMap=0:1000000:82
-UIDMap=82:10008:1
-UIDMap=83:1000083:65453
-GIDMap=0:1000000:82
-GIDMap=82:10000:1
-GIDMap=83:1000083:65453
+UIDMap=0:1000000:65535
+UIDMap=+82:10008:1
+GIDMap=0:1000000:65535
+GIDMap=+82:10000:1
 
 # Network configuration
 Network=host

@@ -23,12 +23,10 @@ User=nginx
 Group=nginx
 
 # UID/GID mapping to map the nginx (101) user inside the container to arbitrary user 10008 / group 10000 on the host
-UIDMap=0:1000000:101
-UIDMap=101:10008:1
-UIDMap=102:1000102:65434
-GIDMap=0:1000000:101
-GIDMap=101:10000:1
-GIDMap=102:1000102:65434
+UIDMap=0:1000000:65535
+UIDMap=+101:10008:1
+GIDMap=0:1000000:65535
+GIDMap=+101:10000:1
 
 # Volume mounts
 Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z

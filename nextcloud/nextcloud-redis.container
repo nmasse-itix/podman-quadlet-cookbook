@@ -24,12 +24,10 @@ User=redis
 Group=redis
 
 # UID/GID mapping to map the redis (999) user / redis (1000) group inside the container to arbitrary user 10008 / group 10000 on the host
-UIDMap=0:1000000:999
-UIDMap=999:10008:1
-UIDMap=1000:1001000:64536
-GIDMap=0:1000000:1000
-GIDMap=1000:10000:1
-GIDMap=1001:1001001:64535
+UIDMap=0:1000000:65535
+UIDMap=+999:10008:1
+GIDMap=0:1000000:65535
+GIDMap=+1000:10000:1
 
 # Environment variables
 Environment=REDISCLI_AUTH=${REDIS_HOST_PASSWORD}
