@@ -1,0 +1,54 @@
+[Unit]
+Description=Collabora Online for Nextcloud
+Documentation=https://hub.docker.com/r/collabora/code/
+After=network.target
+
+# Only start if Collabora has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/collabora.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=nextcloud.target
+
+[Container]
+ContainerName=nextcloud-collabora
+Image=docker.io/collabora/code:latest
+
+# No need for root privileges
+User=1001
+Group=1001
+
+# UID/GID mapping to map the 1001 user inside the container to arbitrary user 10016 / group 10000 on the host
+UIDMap=0:1000000:1001
+UIDMap=1001:10016:1
+UIDMap=1002:1001002:64534
+GIDMap=0:1000000:1001
+GIDMap=1001:10000:1
+GIDMap=1002:1001002:64534
+
+# Security
+SeccompProfile=/etc/quadlets/nextcloud/collabora-seccomp-profile.json
+
+# Network configuration
+Network=host
+
+# Environment variables from secrets and config
+EnvironmentFile=/etc/quadlets/nextcloud/collabora.env
+
+# Volume mounts
+# <none>
+
+# Health check (equivalent to readiness probe)
+HealthCmd=nc -z localhost 9980
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=600
+TimeoutStopSec=30
+
+[Install]
+WantedBy=nextcloud.target

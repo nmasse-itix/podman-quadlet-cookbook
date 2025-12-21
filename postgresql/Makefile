@@ -20,6 +20,11 @@ PG_MAJOR_LAST ?= 18
 test-set-pgmajor:
 	sed -i 's/^PG_MAJOR=.*/PG_MAJOR=$(PG_MAJOR_START)/' config/config.env
 
+$(TARGET_CHROOT)/etc/quadlets/postgresql/init.d:
+	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D -d $@
+
+install-etc: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d
+
 # Integration tests for PostgreSQL quadlet: backup, restore + major version upgrade (14 to 18)
 test: uninstall clean test-set-pgmajor install
 	@echo "Running PostgreSQL integration tests..."; \

@@ -1,6 +1,8 @@
 .PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun
 .PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
+.PHONY: install-files install-files-pre install-files-post install-actions
+.PHONY: install-actions-pre install-actions-post
 
 all: help
 help:
@@ -97,14 +99,21 @@ $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
 install-etc: $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
 install-var: $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
 
-install-pre::
+install-files-pre::
 	@run() { echo $$*; "$$@"; }; \
-    for dep in $(DEPENDENCIES); do \
-		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install; \
+	for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-files; \
 	done
+install-files: install-files-pre install-etc install-var
+	$(MAKE) install-files-post
+install-files-post::
 
-install-post::
-install: pre-requisites dryrun install-etc install-var install-pre
+install-actions-pre::
+	@run() { echo $$*; "$$@"; }; \
+	for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-actions; \
+	done
+install-actions: install-actions-pre
 	systemctl daemon-reload
 	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
 	@run() { echo $$*; "$$@"; }; \
@@ -116,6 +125,13 @@ install: pre-requisites dryrun install-etc install-var install-pre
 	fi
 	systemctl enable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES)
 	systemctl start $(SYSTEMD_MAIN_UNIT_NAMES)
+	$(MAKE) install-actions-post
+
+install-pre::
+install-post::
+install: pre-requisites dryrun install-pre
+	$(MAKE) install-files
+	$(MAKE) install-actions
 	$(MAKE) install-post
 
 uninstall-pre::
@@ -144,7 +160,7 @@ tail-logs: pre-requisites
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
-$(PROJECT_NAME).bu: install-etc install-var
+$(PROJECT_NAME).bu: install-files
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi
