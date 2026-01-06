@@ -4,4 +4,5 @@ ignition:
   config:
     merge:
     - local: nginx.ign
+    - local: nginx-examples.ign
     - local: local.ign

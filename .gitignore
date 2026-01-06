@@ -1,3 +1,4 @@
 *.bu
 *.ign
 !fcos.bu
+*/butane.blocklist

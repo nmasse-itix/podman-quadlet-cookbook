@@ -1,0 +1,11 @@
+/var
+/var/lib
+/var/lib/quadlets
+/etc
+/etc/quadlets
+/etc/systemd
+/etc/systemd/system
+/etc/containers
+/etc/containers/systemd
+/etc/tmpfiles.d
+/etc/sysctl.d

@@ -5,5 +5,7 @@ ignition:
     merge:
     - local: virtiofs.ign
     - local: nextcloud.ign
+    - local: nextcloud-examples.ign
     - local: postgresql.ign
+    - local: postgresql-examples.ign
     - local: local.ign

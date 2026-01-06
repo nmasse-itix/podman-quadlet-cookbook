@@ -1,4 +1,4 @@
-.PHONY: all install install-etc install-var uninstall pre-requisites clean dryrun
+.PHONY: all install install-config install-examples uninstall pre-requisites clean dryrun
 .PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 .PHONY: install-files install-files-pre install-files-post install-actions
@@ -30,15 +30,22 @@ QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)
 					 $(patsubst %.network, %-network.service, $(wildcard *.network)) \
 					 $(patsubst %.pod, %-pod.service, $(wildcard *.pod)) \
 					 $(patsubst %.build, %-build.service, $(wildcard *.build))
-CONFIG_FILES = $(wildcard config/*)
-TMPFILESD_FILES = $(wildcard tmpfiles.d/*)
-SYSCTLD_FILES = $(wildcard sysctl.d/*)
-TARGET_QUADLETS_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES))
-TARGET_SYSTEMD_FILES = $(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES))
+CONFIG_FILES = $(filter-out %/examples, $(wildcard config/*))
+TMPFILESD_FILES = $(filter-out %/examples, $(wildcard tmpfiles.d/*))
+SYSCTLD_FILES = $(filter-out %/examples, $(wildcard sysctl.d/*))
+EXAMPLES_CONFIG_FILES = $(wildcard config/examples/*)
+EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
+EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
-TARGET_FILES = $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
 TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(TMPFILESD_FILES))
 TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
+TARGET_EXAMPLES_CONFIG_FILES = $(patsubst config/examples/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(EXAMPLES_CONFIG_FILES))
+TARGET_EXAMPLES_TMPFILESD_FILES = $(patsubst tmpfiles.d/examples/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(EXAMPLES_TMPFILESD_FILES))
+TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(EXAMPLES_SYSCTLD_FILES))
+TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES)
+TARGET_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
+				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
+				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
 DEPENDENCIES ?= 
 I_KNOW_WHAT_I_AM_DOING ?= 
 DEPENDENCIES_IGNITION_FILES = $(shell for dep in $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign; done)
@@ -79,7 +86,9 @@ $(TARGET_CHROOT)/etc/containers/systemd/%: % $(TARGET_CHROOT)/etc/containers/sys
 $(TARGET_CHROOT)/etc/systemd/system/%: % $(TARGET_CHROOT)/etc/systemd/system
 	install -m 0644 -o root -g root $< $@
 
-$(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
+$(TARGET_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
+$(TARGET_EXAMPLES_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/examples/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
+$(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	@run() { echo $$*; "$$@"; }; \
 	if [ -x $< ]; then \
 		run install -D -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
@@ -87,24 +96,31 @@ $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/q
 		run install -D -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 	fi
 
+$(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
+	install -m 0600 -o root -g root -D $< $@
+
+$(TARGET_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
+$(TARGET_EXAMPLES_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/examples/% $(TARGET_CHROOT)/etc/tmpfiles.d
+$(TARGET_TMPFILESD_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES):
+	install -D -m 0644 -o root -g root $< $@
+
+$(TARGET_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
+$(TARGET_EXAMPLES_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/examples/% $(TARGET_CHROOT)/etc/sysctl.d
+$(TARGET_SYSCTLD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES):
+	install -D -m 0644 -o root -g root $< $@
+
 $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
 	install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
-$(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
-	install -D -m 0644 -o root -g root $< $@
-
-$(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
-	install -D -m 0644 -o root -g root $< $@
-
-install-etc: $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
-install-var: $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+install-config: $(TARGET_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+install-examples: $(TARGET_EXAMPLE_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
 
 install-files-pre::
 	@run() { echo $$*; "$$@"; }; \
 	for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-files; \
 	done
-install-files: install-files-pre install-etc install-var
+install-files: install-files-pre install-config install-examples
 	$(MAKE) install-files-post
 install-files-post::
 
@@ -148,7 +164,7 @@ uninstall: pre-requisites uninstall-pre
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --purge /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi
-	rm -f $(TARGET_QUADLETS_FILES) $(TARGET_SYSTEMD_FILES) $(TARGET_CONFIG_FILES)
+	rm -f $(TARGET_FILES) $(TARGET_EXAMPLE_FILES)
 	systemctl daemon-reload
 	$(MAKE) uninstall-post
 
@@ -160,21 +176,41 @@ tail-logs: pre-requisites
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
-$(PROJECT_NAME).bu: install-files
+$(PROJECT_NAME).bu: install-config
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(TOP_LEVEL_DIR)/butane.blocklist $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
+
+$(PROJECT_NAME)-examples.bu: install-examples
+	@if [ -z "$(TARGET_CHROOT)" ]; then \
+		echo "TARGET_CHROOT is not set!"; exit 1; \
+	fi
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) butane.blocklist > $(PROJECT_NAME)-examples.bu
 
 $(PROJECT_NAME).ign: butane
 	butane --strict -o $(PROJECT_NAME).ign $(PROJECT_NAME).bu
+	butane --strict -o $(PROJECT_NAME)-examples.ign $(PROJECT_NAME)-examples.bu
 
 butane:
 	@run() { echo $$*; "$$@"; }; \
+	init_butane_blocklist() { \
+		(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > butane.blocklist; \
+	}; \
 	if [ -z "$(TARGET_CHROOT)" ]; then \
-		run $(MAKE) TARGET_CHROOT=$$(mktemp -d /tmp/butane-XXXXXX) $(PROJECT_NAME).bu; \
+		TARGET_CHROOT=$$(mktemp -d /tmp/butane-XXXXXX); \
 	else \
-		run $(MAKE) $(PROJECT_NAME).bu; \
+		TARGET_CHROOT="$(TARGET_CHROOT)"; \
+	fi; \
+	for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep TARGET_CHROOT="$$TARGET_CHROOT" butane ; \
+	done ; \
+	run init_butane_blocklist ; \
+	run $(MAKE) TARGET_CHROOT="$$TARGET_CHROOT" $(PROJECT_NAME).bu; \
+	run init_butane_blocklist ; \
+	run $(MAKE) TARGET_CHROOT="$$TARGET_CHROOT" $(PROJECT_NAME)-examples.bu; \
+	if [ -z "$(TARGET_CHROOT)" ]; then \
+		run rm -rf "$$TARGET_CHROOT"; \
 	fi
 
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu

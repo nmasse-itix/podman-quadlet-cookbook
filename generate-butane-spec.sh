@@ -17,7 +17,8 @@
 set -Eeuo pipefail
 
 TARGET_CHROOT="$1"
-SYSTEMD_MAIN_UNIT_NAMES="${@:2}"
+IGNORE_LIST_FILE="$2"
+SYSTEMD_MAIN_UNIT_NAMES="${@:3}"
 
 cat <<"EOF"
 variant: fcos
@@ -27,6 +28,11 @@ storage:
 EOF
 for file in $(find "$TARGET_CHROOT" \! -type d); do
     rel_path="${file#$TARGET_CHROOT}"
+    if grep -qxF "$rel_path" "$IGNORE_LIST_FILE"; then
+
+      # Skip files & directories that are already part of the CoreOS default installation
+      continue
+    fi
     cat <<EOF
   - path: "${rel_path}"
     mode: 0$(stat -c '%a' "$file")
@@ -44,9 +50,7 @@ cat <<"EOF"
 EOF
 for dir in $(find "$TARGET_CHROOT" -type d); do
     rel_path="${dir#$TARGET_CHROOT}"
-    if [[ "$rel_path" != "/var/lib/quadlets/"* ]] && [[ "$rel_path" != "/etc/quadlets/"* ]] \
-        && [[ "$rel_path" != "/etc/systemd/system/"* ]] && [[ "$rel_path" != "/etc/containers/systemd/"* ]] \
-        && [[ "$rel_path" != "/etc/tmpfiles.d/"* ]] && [[ "$rel_path" != "/etc/sysctl.d/"* ]]; then
+    if [ -z "$rel_path" ] || grep -qxF "$rel_path" "$IGNORE_LIST_FILE"; then
 
       # Skip files & directories that are already part of the CoreOS default installation
       continue

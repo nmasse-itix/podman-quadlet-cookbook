@@ -5,4 +5,5 @@ ignition:
     merge:
     - local: virtiofs.ign
     - local: postgresql.ign
+    - local: postgresql-examples.ign
     - local: local.ign

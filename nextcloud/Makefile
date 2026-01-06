@@ -17,7 +17,7 @@ include $(TOP_LEVEL_DIR)/Makefile.common
 NEXTCLOUD_MAJOR_START ?= 25
 NEXTCLOUD_MAJOR_LAST ?= 31
 test-set-nextcloud-major:
-	sed -i 's/^NEXTCLOUD_MAJOR=.*/NEXTCLOUD_MAJOR=$(NEXTCLOUD_MAJOR_START)/' config/config.env
+	sed -i 's/^NEXTCLOUD_MAJOR=.*/NEXTCLOUD_MAJOR=$(NEXTCLOUD_MAJOR_START)/' config/examples/config.env
 
 $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis:
 	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
@@ -29,12 +29,11 @@ $(TARGET_CHROOT)/etc/quadlets/nextcloud/www.conf: config/www.conf
 	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D $< $@
 
 $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
-	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/master/docker/cool-seccomp-profile.json
+	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
 
-install-var: $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config
-install-etc: $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
+install-config: $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
 
-install-files: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql
+install-examples: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql
 $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql: other/nextcloud.sql
 	install -m 0644 -o 10004 -g 10000 $< $@
 
