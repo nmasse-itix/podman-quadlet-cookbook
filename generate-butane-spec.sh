@@ -9,6 +9,9 @@
 # It takes the following parameters:
 #   - The target chroot directory where the quadlets and systemd units
 #     have been installed.
+#   - The path to a file containing a list of files and directories
+#     (one per line) to ignore (i.e., files and directories that are
+#     already part of the CoreOS default installation).
 #   - The list of systemd main unit names to enable.
 #
 # It outputs the butane config file to stdout.

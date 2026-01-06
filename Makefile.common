@@ -1,9 +1,3 @@
-.PHONY: all install install-config install-examples uninstall pre-requisites clean dryrun
-.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
-.PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
-.PHONY: install-files install-files-pre install-files-post install-actions
-.PHONY: install-actions-pre install-actions-post
-
 all: help
 help:
 	@echo "Available targets:"
@@ -18,40 +12,68 @@ help:
 	@echo "  clean-vm       - Clean up the Fedora CoreOS VM and its resources"
 	@echo "  console		- Connect to the Fedora CoreOS VM console"
 
+# Where to install the quadlets and systemd units. If not set, the host system is used.
 TARGET_CHROOT ?= 
+
+# Name of the current project, derived from the current working directory.
+# This is used to create subdirectories for configuration and state files.
 PROJECT_NAME := $(shell basename "$${PWD}")
+
+# Quadlets files and their corresponding systemd unit names
 QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build)
-SYSTEMD_FILES = $(wildcard *.service *.target *.timer *.mount)
-SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer *.mount)
-SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
-SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
 QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)) \
 					 $(patsubst %.volume, %-volume.service, $(wildcard *.volume)) \
 					 $(patsubst %.network, %-network.service, $(wildcard *.network)) \
 					 $(patsubst %.pod, %-pod.service, $(wildcard *.pod)) \
 					 $(patsubst %.build, %-build.service, $(wildcard *.build))
+
+# Wellknown systemd unit file types
+SYSTEMD_FILES = $(wildcard *.service *.target *.timer *.mount)
+SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer *.mount)
+SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
+
+# The main systemd units will be enabled and started after installation.
+SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
+
+# Configuration files
 CONFIG_FILES = $(filter-out %/examples, $(wildcard config/*))
 TMPFILESD_FILES = $(filter-out %/examples, $(wildcard tmpfiles.d/*))
 SYSCTLD_FILES = $(filter-out %/examples, $(wildcard sysctl.d/*))
-EXAMPLES_CONFIG_FILES = $(wildcard config/examples/*)
-EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
-EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
 TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(TMPFILESD_FILES))
 TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
+
+# Example configuration files
+EXAMPLES_CONFIG_FILES = $(wildcard config/examples/*)
+EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
+EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
 TARGET_EXAMPLES_CONFIG_FILES = $(patsubst config/examples/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(EXAMPLES_CONFIG_FILES))
 TARGET_EXAMPLES_TMPFILESD_FILES = $(patsubst tmpfiles.d/examples/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(EXAMPLES_TMPFILESD_FILES))
 TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(EXAMPLES_SYSCTLD_FILES))
-TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES)
+
+# All configuration files to be installed
 TARGET_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
 				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
 				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
+
+# All example configuration files to be installed
+TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES)
+
+# Dependencies on other projects
+# List here the names of other projects (directories at the top-level) that this project depends on.
 DEPENDENCIES ?= 
+
+# Set this variable to "yes" to skip the confirmation prompt when running "make clean".
 I_KNOW_WHAT_I_AM_DOING ?= 
+
+# List of all ignition files corresponding to the dependencies
 DEPENDENCIES_IGNITION_FILES = $(shell for dep in $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign; done)
+
+# User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
 PROJECT_GID ?= 0
 
+# Ensure that the Makefile is not run from the top-level directory and that it is run as root.
 pre-requisites:
 	@if [ -z "$(TOP_LEVEL_DIR)" ]; then \
 	    echo "Do not run this Makefile from the top-level directory!" >&2; \
@@ -62,30 +84,27 @@ pre-requisites:
 		exit 1; \
 	fi
 
+# Perform a dry run of the podman systemd generator to validate the quadlet and systemd files.
 dryrun:
 	QUADLET_UNIT_DIRS="$$PWD" /usr/lib/systemd/system-generators/podman-system-generator -dryrun > /dev/null
 
-$(TARGET_CHROOT)/etc/containers/systemd:
+# Create the base directories needed for installation.
+$(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d:
 	install -D -d -m 0755 -o root -g root $@
 
-$(TARGET_CHROOT)/etc/systemd/system:
-	install -D -d -m 0755 -o root -g root $@
-
+# Create the directory to store quadlet configuration files.
 $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME):
 	install -D -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
-$(TARGET_CHROOT)/etc/tmpfiles.d:
-	install -D -d -m 0755 -o root -g root $@
-
-$(TARGET_CHROOT)/etc/sysctl.d:
-	install -D -d -m 0755 -o root -g root $@
-
+# Copy quadlet files
 $(TARGET_CHROOT)/etc/containers/systemd/%: % $(TARGET_CHROOT)/etc/containers/systemd
 	install -m 0644 -o root -g root $< $@
 
+# Copy systemd unit files
 $(TARGET_CHROOT)/etc/systemd/system/%: % $(TARGET_CHROOT)/etc/systemd/system
 	install -m 0644 -o root -g root $< $@
 
+# Copy configuration files, handling executable and non-executable files differently.
 $(TARGET_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 $(TARGET_EXAMPLES_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/examples/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
@@ -96,39 +115,49 @@ $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 		run install -D -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 	fi
 
+# Handle .env files separately to set more restrictive permissions
 $(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	install -m 0600 -o root -g root -D $< $@
 
+# Copy tmpfiles.d files
 $(TARGET_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
 $(TARGET_EXAMPLES_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/examples/% $(TARGET_CHROOT)/etc/tmpfiles.d
 $(TARGET_TMPFILESD_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES):
 	install -D -m 0644 -o root -g root $< $@
 
+# Copy sysctl.d files
 $(TARGET_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
 $(TARGET_EXAMPLES_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/examples/% $(TARGET_CHROOT)/etc/sysctl.d
 $(TARGET_SYSCTLD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES):
 	install -D -m 0644 -o root -g root $< $@
 
+# Create the directory to store quadlet state and data.
 $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
 	install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
+# Copy all configuration files provided by this project.
 install-config: $(TARGET_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+
+# Copy all example configuration files provided by this project.
 install-examples: $(TARGET_EXAMPLE_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
 
+# Copy all quadlets and systemd files provided by this project.
+install-files: install-files-pre install-config install-examples
+	$(MAKE) install-files-post
+
+# Custom commands to be run before copying quadlets and systemd files.
+# This target can be extended by Makefiles sourcing this one.
 install-files-pre::
 	@run() { echo $$*; "$$@"; }; \
 	for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-files; \
 	done
-install-files: install-files-pre install-config install-examples
-	$(MAKE) install-files-post
+
+# Custom commands to be run after copying quadlets and systemd files.
+# This target can be extended by Makefiles sourcing this one.
 install-files-post::
 
-install-actions-pre::
-	@run() { echo $$*; "$$@"; }; \
-	for dep in $(DEPENDENCIES); do \
-		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-actions; \
-	done
+# Perform post-installation actions such as enabling and starting units.
 install-actions: install-actions-pre
 	systemctl daemon-reload
 	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
@@ -143,20 +172,33 @@ install-actions: install-actions-pre
 	systemctl start $(SYSTEMD_MAIN_UNIT_NAMES)
 	$(MAKE) install-actions-post
 
-install-pre::
-install-post::
+# Custom commands to be run before performing post-installation actions.
+# This target can be extended by Makefiles sourcing this one.
+install-actions-pre::
+	@run() { echo $$*; "$$@"; }; \
+	for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-actions; \
+	done
+
+# Custom commands to be run after performing post-installation actions.
+# This target can be extended by Makefiles sourcing this one.
+install-actions-post::
+
+# Install all quadlets and systemd units provided by this project.
 install: pre-requisites dryrun install-pre
 	$(MAKE) install-files
 	$(MAKE) install-actions
 	$(MAKE) install-post
 
-uninstall-pre::
-uninstall-post::
-	@run() { echo $$*; "$$@"; }; \
-    for dep in $(DEPENDENCIES); do \
-		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep uninstall; \
-	done
+# Custom commands to be run before installing quadlets and systemd units.
+# This target can be extended by Makefiles sourcing this one.
+install-pre::
 
+# Custom commands to be run after installing quadlets and systemd units.
+# This target can be extended by Makefiles sourcing this one.
+install-post::
+
+# Uninstall all quadlets and systemd units installed by this project.
 uninstall: pre-requisites uninstall-pre
 	systemctl disable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) || true
 	systemctl stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
@@ -168,6 +210,19 @@ uninstall: pre-requisites uninstall-pre
 	systemctl daemon-reload
 	$(MAKE) uninstall-post
 
+# Custom commands to be run before uninstalling quadlets and systemd units.
+# This target can be extended by Makefiles sourcing this one.
+uninstall-pre::
+
+# Custom commands to be run after uninstalling quadlets and systemd units.
+# This target can be extended by Makefiles sourcing this one.
+uninstall-post::
+	@run() { echo $$*; "$$@"; }; \
+    for dep in $(DEPENDENCIES); do \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep uninstall; \
+	done
+
+# Tail the logs of all units managed by this project.
 tail-logs: pre-requisites
 	@run() { echo $$*; "$$@"; }; \
 	declare -a journalctl_args=( -f ); \
@@ -176,22 +231,27 @@ tail-logs: pre-requisites
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
+# Generate the current project's Butane spec.
 $(PROJECT_NAME).bu: install-config
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi
 	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(TOP_LEVEL_DIR)/butane.blocklist $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
 
+# Generate the current project's Butane spec for the example configuration files.
 $(PROJECT_NAME)-examples.bu: install-examples
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi
 	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) butane.blocklist > $(PROJECT_NAME)-examples.bu
 
+# Generate the current project's Ignition files from the Butane specs.
 $(PROJECT_NAME).ign: butane
 	butane --strict -o $(PROJECT_NAME).ign $(PROJECT_NAME).bu
 	butane --strict -o $(PROJECT_NAME)-examples.ign $(PROJECT_NAME)-examples.bu
 
+# Build the Butane specifications suitable for Fedora CoreOS, including those of the dependencies of this project.
+# In order to avoid duplications in the ignition files, a blocklist is created containing file paths as they are added to the chroot.
 butane:
 	@run() { echo $$*; "$$@"; }; \
 	init_butane_blocklist() { \
@@ -213,14 +273,17 @@ butane:
 		run rm -rf "$$TARGET_CHROOT"; \
 	fi
 
+# Generate the local Butane spec (the one containing local customizations).
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
-# Because we don't know how to build this file, it is safer to declare it as phony and let the Makefile of the dependency handle it.
-.PHONY: $(DEPENDENCIES_IGNITION_FILES)
+# Build the ignition files of the dependencies of this project.
 $(DEPENDENCIES_IGNITION_FILES):
 	$(MAKE) -C $(dir $@) $(notdir $@)
+# Because we don't know how to build this file, it is safer to declare it as phony and let the Makefile of the dependency handle it.
+.PHONY: $(DEPENDENCIES_IGNITION_FILES)
 
+# Generate the final Fedora CoreOS ignition file by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
 fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
 	@run() { echo $$*; "$$@"; }; \
 	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
@@ -228,6 +291,7 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_
 	run butane --strict -d $$tmp -o $@ fcos.bu; \
 	run rm -rf $$tmp
 
+# Fetch the latest version of the Fedora CoreOS QCOW2 image.
 /var/lib/libvirt/images/library/fedora-coreos.qcow2:
 	@run() { echo $$*; "$$@"; }; \
 	run mkdir -p /var/lib/libvirt/images/library/ ; \
@@ -238,15 +302,19 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_
 	qcow2=$$(ls -1ctr /var/lib/libvirt/images/library/fedora-coreos-*.qcow2 | tail -n 1) ; \
 	run mv "$$qcow2" $@
 
+# Copy the ignition file.
 /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: fcos.ign
 	install -D -o root -g root -m 0644 $< $@
 
+# Copy the Fedora CoreOS base image to create a new QCOW2 image for the VM.
 /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2: /var/lib/libvirt/images/library/fedora-coreos.qcow2
 	install -D -o root -g root -m 0644 $< $@
 
+# Create the directory to be shared with the Fedora CoreOS VM through virtiofs.
 /srv/fcos-$(PROJECT_NAME):
 	install -d -o root -g root -m 0755 $@
 
+# Launch a Fedora CoreOS VM with the generated Butane spec.
 fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2 /srv/fcos-$(PROJECT_NAME)
 	virt-install --name=fcos-$(PROJECT_NAME) --import --noautoconsole \
 		--ram=4096 --vcpus=2 --os-variant=fedora-coreos-stable \
@@ -257,30 +325,40 @@ fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fc
 		--memorybacking=access.mode=shared,source.type=memfd \
 		--filesystem=type=mount,accessmode=passthrough,driver.type=virtiofs,driver.queue=1024,source.dir=/srv/fcos-$(PROJECT_NAME),target.dir=data
 
+# Clean up the Fedora CoreOS VM and its resources.
 clean-vm: pre-requisites
 	virsh destroy fcos-$(PROJECT_NAME) || true
 	virsh undefine fcos-$(PROJECT_NAME) --nvram || true
 	rm -rf /var/lib/libvirt/images/fcos-$(PROJECT_NAME)
 	rm -rf /srv/fcos-$(PROJECT_NAME)
 
+# Connect to the console of the Fedora CoreOS VM.
 console: pre-requisites
 	@while sleep 2; do virsh console fcos-$(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
 
+# List all systemd and quadlet unit names provided by the dependencies of this project.
 units-pre::
 	@for dep in $(DEPENDENCIES); do \
 		$(MAKE) -s -C $(TOP_LEVEL_DIR)/$$dep units 2>/dev/null; \
 	done
+
+# List all systemd and quadlet unit names provided by this project and, through "units-pre", also its dependencies.
 units: units-pre
 	@for unit in $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do echo "$$unit"; done
 
+# Custom commands to be run before cleaning persistent data and configuration files.
+# This target can be extended by Makefiles sourcing this one.
 clean-pre::
 	@run() { echo $$*; "$$@"; }; \
     for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep clean; \
 	done
 
-
+# Custom commands to be run after cleaning persistent data and configuration files.
+# This target can be extended by Makefiles sourcing this one.
 clean-post::
+
+# Remove all persistent data and configuration files
 clean: clean-pre pre-requisites
 	rm -f *.butane
 	@run() { echo $$*; "$$@"; }; \
@@ -292,3 +370,10 @@ clean: clean-pre pre-requisites
 	fi
 	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
 	$(MAKE) clean-post
+
+# All phony targets
+.PHONY: all install install-config install-examples uninstall pre-requisites clean dryrun
+.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
+.PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
+.PHONY: install-files install-files-pre install-files-post install-actions
+.PHONY: install-actions-pre install-actions-post
