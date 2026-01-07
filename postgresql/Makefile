@@ -2,9 +2,6 @@
 ## Makefile for PostgreSQL quadlet
 ##
 
-# Project dependencies
-DEPENDENCIES = virtiofs
-
 # PostgreSQL quadlet is mapped to the 10004 user (postgres) and 10000 group (itix-svc)
 PROJECT_UID = 10004
 PROJECT_GID = 10000

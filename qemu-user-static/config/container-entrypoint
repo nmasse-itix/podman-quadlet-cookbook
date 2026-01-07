@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -Eeuo pipefail
+
+if [ ! -d /proc/sys/fs/binfmt_misc ]; then
+    echo "No binfmt support in the kernel."
+    echo "  Try: '/sbin/modprobe binfmt_misc' from the host"
+    exit 1
+fi
+
+if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
+    echo "Mounting /proc/sys/fs/binfmt_misc..."
+    mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
+fi
+
+echo "Cleaning up..."
+find /proc/sys/fs/binfmt_misc -type f -name 'qemu-*' -exec sh -c 'echo -1 > {}' \;
+
+echo "Registering..."
+exec /usr/lib/systemd/systemd-binfmt

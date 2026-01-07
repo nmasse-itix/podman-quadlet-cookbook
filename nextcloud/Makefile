@@ -2,7 +2,6 @@
 ## Makefile for PostgreSQL quadlet
 ##
 
-# Project dependencies: Nextcloud also depends on virtiofs for data storage but is a transitive dependency via postgresql
 DEPENDENCIES = postgresql
 
 # Nextcloud quadlet is mapped to the 10008 user (nextcloud) and 10000 group (itix-svc)

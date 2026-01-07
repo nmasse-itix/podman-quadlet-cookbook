@@ -3,6 +3,8 @@ SUBDIRS := $(dir $(SUBDIRS))
 
 .PHONY: all help butane clean dryrun fcos-vm clean-vm uninstall $(SUBDIRS)
 
+export I_KNOW_WHAT_I_AM_DOING ?= no
+
 all: help
 help:
 	@echo "Available targets:"
@@ -16,6 +18,8 @@ help:
 dryrun: $(SUBDIRS)
 butane: $(SUBDIRS)
 clean: $(SUBDIRS)
+	rm -f local.ign
+
 fcos-vm: $(SUBDIRS)
 clean-vm: $(SUBDIRS)
 uninstall: $(SUBDIRS)

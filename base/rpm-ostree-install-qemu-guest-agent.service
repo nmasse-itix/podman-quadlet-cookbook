@@ -1,0 +1,20 @@
+[Unit]
+Description=Install qemu-guest-agent
+Wants=network-online.target
+After=network-online.target
+Before=zincati.service
+ConditionPathExists=!/usr/bin/qemu-ga
+
+# Only run on Fedora CoreOS
+ConditionOSRelease=ID=fedora
+ConditionOSRelease=VARIANT_ID=coreos
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/rpm-ostree install -y --allow-inactive qemu-guest-agent
+ExecStart=/usr/bin/rpm-ostree apply-live
+ExecStart=/usr/bin/systemctl enable --now qemu-guest-agent.service
+
+[Install]
+WantedBy=multi-user.target

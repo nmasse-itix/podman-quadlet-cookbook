@@ -1,0 +1,26 @@
+[Unit]
+Description=multiarch /usr/bin/qemu-*-static
+Documentation=https://github.com/multiarch/qemu-user-static
+Wants=qemu-user-static-build.service
+After=qemu-user-static-build.service
+PartOf=qemu-user-static.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+[Container]
+ContainerName=qemu-user-static
+
+# Image
+Image=localhost/qemu-user-static:latest
+AutoUpdate=local
+
+# Security
+PodmanArgs=--privileged
+SecurityLabelFileType=container_file_t
+SecurityLabelType=spc_t
+SecurityLabelLevel=s0
+
+[Install]
+WantedBy=qemu-user-static.target

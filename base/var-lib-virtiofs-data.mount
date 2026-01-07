@@ -1,9 +1,5 @@
 [Unit]
 Description=Mount the "data" virtio filesystem
-After=backup-virtiofs.service
-Requires=backup-virtiofs.service
-Before=restore-virtiofs.service
-Wants=restore-virtiofs.service
 
 # Only run on Fedora CoreOS
 ConditionOSRelease=ID=fedora

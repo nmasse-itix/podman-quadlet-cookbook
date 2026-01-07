@@ -1,0 +1,11 @@
+[Unit]
+Description=qemu-user-static Service Target
+Documentation=man:systemd.target(5)
+Requires=qemu-user-static.service qemu-user-static-build.timer
+After=qemu-user-static.service qemu-user-static-build.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

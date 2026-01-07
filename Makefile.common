@@ -1,6 +1,19 @@
 all: help
 help:
+	@echo
+	@echo "================================================"
+	@echo " Project '$(PROJECT_NAME)'"
+	@echo "================================================"
+	@echo
+	@echo "Relevant paths and settings:"
+	@echo
+	@echo "  Configuration directory:         /etc/quadlets/$(PROJECT_NAME)"
+	@echo "  Persistent Storage directory:    /var/lib/quadlets/$(PROJECT_NAME)"
+	@echo "  UID & GID for project files:     $(PROJECT_UID):$(PROJECT_GID)"
+	@echo "  Dependencies:                    $(if $(DEPENDENCIES),$(DEPENDENCIES),none)"
+	@echo
 	@echo "Available targets:"
+	@echo
 	@echo "  help           - Show this help message"
 	@echo "  install        - Install quadlets and systemd units"
 	@echo "  uninstall      - Uninstall quadlets and systemd units"
@@ -9,11 +22,35 @@ help:
 	@echo "  tail-logs      - Tail the logs of the quadlet units"
 	@echo "  butane         - Build Butane specifications suitable for Fedora CoreOS"
 	@echo "  fcos-vm        - Launch a Fedora CoreOS VM with the generated Butane spec"
-	@echo "  clean-vm       - Clean up the Fedora CoreOS VM and its resources"
-	@echo "  console		- Connect to the Fedora CoreOS VM console"
+	@echo "  clean-vm       - Clean up the Fedora CoreOS VM but keep its storage resources"
+	@echo "  remove-vm      - Remove all resources related to the Fedora CoreOS VM"
+	@echo "  console        - Connect to the Fedora CoreOS VM console"
+	@echo
+	@echo "Useful commands:"
+	@echo
+	@echo "  1. make uninstall install                    # Replace quadlets and systemd units"
+	@echo "  2. make uninstall clean install              # Same but also remove persistent data and configuration"
+	@echo "  3. make uninstall install tail-logs          # Replace quadlets and systemd units, then tail their logs"
+	@echo "  4. make I_KNOW_WHAT_I_AM_DOING=yes clean     # Remove all persistent data and configuration without confirmation"
+	@echo "  5. make butane                               # Build Butane specifications suitable for Fedora CoreOS"
+	@echo "  6. make fcos-vm console                      # Launch a fresh Fedora CoreOS VM (while retaining its persistent data) and connect to its console"
+	@echo "  7. make remove-vm                            # Remove all resources related to the Fedora CoreOS VM"
+	@echo
+	@echo "All-in-one commands:"
+	@echo
+	@echo "  1. make I_KNOW_WHAT_I_AM_DOING=yes uninstall clean install tail-logs"
+	@echo "  2. make fcos-vm console"
+	@echo
 
-# Where to install the quadlets and systemd units. If not set, the host system is used.
-TARGET_CHROOT ?= 
+# Create a temporary directory as target chroot when we detect that we are building Butane specs or launching a Fedora CoreOS VM.
+ifneq ($(filter %.ign %.bu butane fcos-vm,$(MAKECMDGOALS)),)
+ifeq ($(TARGET_CHROOT),)
+export TARGET_CHROOT := $(shell mktemp -d /tmp/butane-chroot-XXXXXX)
+endif
+ifeq ($(BUTANE_BLOCKLIST),)
+export BUTANE_BLOCKLIST := $(shell tmp=$$(mktemp /tmp/butane-blocklist-XXXXXX); cp $(TOP_LEVEL_DIR)/butane.blocklist "$$tmp"; echo "$$tmp")
+endif
+endif
 
 # Name of the current project, derived from the current working directory.
 # This is used to create subdirectories for configuration and state files.
@@ -67,7 +104,8 @@ DEPENDENCIES ?=
 I_KNOW_WHAT_I_AM_DOING ?= 
 
 # List of all ignition files corresponding to the dependencies
-DEPENDENCIES_IGNITION_FILES = $(shell for dep in $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign; done)
+# Here, we inject the "base" project as a dependency. It can therefore be assumed to always be embeddable in project's butane specs.
+DEPENDENCIES_IGNITION_FILES := $(shell for dep in base $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign $(TOP_LEVEL_DIR)/$$dep/$$dep-examples.ign; done)
 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
@@ -83,6 +121,13 @@ pre-requisites:
 		echo "This Makefile must be run as root" >&2; \
 		exit 1; \
 	fi
+	@set -Eeuo pipefail; \
+	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq; do \
+		if ! which $$tool &>/dev/null ; then \
+			echo "$$tool is not installed. Please install it first." >&2; \
+			exit 1; \
+		fi ; \
+	done
 
 # Perform a dry run of the podman systemd generator to validate the quadlet and systemd files.
 dryrun:
@@ -109,6 +154,7 @@ $(TARGET_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/
 $(TARGET_EXAMPLES_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/examples/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	if [ -x $< ]; then \
 		run install -D -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 	else \
@@ -149,6 +195,7 @@ install-files: install-files-pre install-config install-examples
 # This target can be extended by Makefiles sourcing this one.
 install-files-pre::
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-files; \
 	done
@@ -162,6 +209,7 @@ install-actions: install-actions-pre
 	systemctl daemon-reload
 	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --create /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi; \
@@ -176,6 +224,7 @@ install-actions: install-actions-pre
 # This target can be extended by Makefiles sourcing this one.
 install-actions-pre::
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep install-actions; \
 	done
@@ -203,6 +252,7 @@ uninstall: pre-requisites uninstall-pre
 	systemctl disable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) || true
 	systemctl stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --purge /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi
@@ -218,6 +268,7 @@ uninstall-pre::
 # This target can be extended by Makefiles sourcing this one.
 uninstall-post::
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
     for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep uninstall; \
 	done
@@ -225,67 +276,68 @@ uninstall-post::
 # Tail the logs of all units managed by this project.
 tail-logs: pre-requisites
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	declare -a journalctl_args=( -f ); \
 	for unit in $$($(MAKE) -s units 2>/dev/null | sort -u); do \
 		journalctl_args+=( -u "$$unit" ); \
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
-# Generate the current project's Butane spec.
-$(PROJECT_NAME).bu: install-config
+# Ensure that required variables are set before building Butane specifications.
+butane-prerequisites:
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
+	fi; \
+	if [ -z "$(BUTANE_BLOCKLIST)" ]; then \
+		echo "BUTANE_BLOCKLIST is not set!"; exit 1; \
 	fi
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(TOP_LEVEL_DIR)/butane.blocklist $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
 
-# Generate the current project's Butane spec for the example configuration files.
-$(PROJECT_NAME)-examples.bu: install-examples
-	@if [ -z "$(TARGET_CHROOT)" ]; then \
-		echo "TARGET_CHROOT is not set!"; exit 1; \
-	fi
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) butane.blocklist > $(PROJECT_NAME)-examples.bu
+# Build the Butane specifications (configuration files) suitable for Fedora CoreOS.
+# In order to avoid duplications in the ignition files, a blocklist is updated, containing file paths as they are added to the chroot.
+$(PROJECT_NAME).bu: butane-prerequisites install-config
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
+	@(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"
+
+# Build the Butane specifications (example files) suitable for Fedora CoreOS.
+# In order to avoid duplications in the ignition files, a blocklist is updated, containing file paths as they are added to the chroot.
+$(PROJECT_NAME)-examples.bu: butane-prerequisites install-examples
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > $(PROJECT_NAME)-examples.bu
+	@(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"
+
+# Build the Butane specifications + Ignition files suitable for Fedora CoreOS of the dependencies of this project.
+butane-pre:: butane-prerequisites
+	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
+	for dep in base $(DEPENDENCIES); do \
+		if [[ "$$dep" == "$(PROJECT_NAME)" ]]; then \
+			# Avoid building the current project as its own dependency. \
+			continue; \
+		fi ; \
+		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep $$dep.ign $$dep-examples.ign ; \
+	done
 
 # Generate the current project's Ignition files from the Butane specs.
-$(PROJECT_NAME).ign: butane
-	butane --strict -o $(PROJECT_NAME).ign $(PROJECT_NAME).bu
-	butane --strict -o $(PROJECT_NAME)-examples.ign $(PROJECT_NAME)-examples.bu
+$(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: butane-pre
+$(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: %.ign: %.bu
+	butane --strict -o $@ $<
 
-# Build the Butane specifications suitable for Fedora CoreOS, including those of the dependencies of this project.
-# In order to avoid duplications in the ignition files, a blocklist is created containing file paths as they are added to the chroot.
-butane:
-	@run() { echo $$*; "$$@"; }; \
-	init_butane_blocklist() { \
-		(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > butane.blocklist; \
-	}; \
-	if [ -z "$(TARGET_CHROOT)" ]; then \
-		TARGET_CHROOT=$$(mktemp -d /tmp/butane-XXXXXX); \
-	else \
-		TARGET_CHROOT="$(TARGET_CHROOT)"; \
-	fi; \
-	for dep in $(DEPENDENCIES); do \
-		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep TARGET_CHROOT="$$TARGET_CHROOT" butane ; \
-	done ; \
-	run init_butane_blocklist ; \
-	run $(MAKE) TARGET_CHROOT="$$TARGET_CHROOT" $(PROJECT_NAME).bu; \
-	run init_butane_blocklist ; \
-	run $(MAKE) TARGET_CHROOT="$$TARGET_CHROOT" $(PROJECT_NAME)-examples.bu; \
-	if [ -z "$(TARGET_CHROOT)" ]; then \
-		run rm -rf "$$TARGET_CHROOT"; \
-	fi
+# Build the Butane specifications + Ignition files suitable for Fedora CoreOS, including those of the dependencies of this project.
+butane: fcos.ign
 
-# Generate the local Butane spec (the one containing local customizations).
+# Generate the local Butane spec + Ignition file (the one containing local customizations).
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
 # Build the ignition files of the dependencies of this project.
 $(DEPENDENCIES_IGNITION_FILES):
 	$(MAKE) -C $(dir $@) $(notdir $@)
-# Because we don't know how to build this file, it is safer to declare it as phony and let the Makefile of the dependency handle it.
+# The file might exist already, declare it as phony and let the child Makefile handle it.
 .PHONY: $(DEPENDENCIES_IGNITION_FILES)
 
 # Generate the final Fedora CoreOS ignition file by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
-fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
+fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_FILES)
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
 	run cp $(filter %.ign,$^) $$tmp; \
 	run butane --strict -d $$tmp -o $@ fcos.bu; \
@@ -294,6 +346,7 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_
 # Fetch the latest version of the Fedora CoreOS QCOW2 image.
 /var/lib/libvirt/images/library/fedora-coreos.qcow2:
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	run mkdir -p /var/lib/libvirt/images/library/ ; \
 	if ! run coreos-installer download -p qemu -f qcow2.xz -d -C /var/lib/libvirt/images/library/ ; then \
 		echo "CoreOS QCOW2 image could not be downloaded." >&2; \
@@ -310,31 +363,50 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_
 /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2: /var/lib/libvirt/images/library/fedora-coreos.qcow2
 	install -D -o root -g root -m 0644 $< $@
 
+# Create an empty QCOW2 image for the /var filesystem of the VM.
+/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/var.qcow2:
+	qemu-img create -f qcow2 $@ 100G
+
 # Create the directory to be shared with the Fedora CoreOS VM through virtiofs.
 /srv/fcos-$(PROJECT_NAME):
 	install -d -o root -g root -m 0755 $@
 
 # Launch a Fedora CoreOS VM with the generated Butane spec.
-fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2 /srv/fcos-$(PROJECT_NAME)
+fcos-vm: pre-requisites clean-vm /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2 /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/var.qcow2 /srv/fcos-$(PROJECT_NAME)
 	virt-install --name=fcos-$(PROJECT_NAME) --import --noautoconsole \
 		--ram=4096 --vcpus=2 --os-variant=fedora-coreos-stable \
 		--disk path=/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2,format=qcow2,size=50 \
+		--disk path=/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/var.qcow2,format=qcow2 \
 		--qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign" \
 		--network network=default,model=virtio \
 		--console=pty,target.type=virtio --serial=pty --graphics=none --boot=uefi \
 		--memorybacking=access.mode=shared,source.type=memfd \
 		--filesystem=type=mount,accessmode=passthrough,driver.type=virtiofs,driver.queue=1024,source.dir=/srv/fcos-$(PROJECT_NAME),target.dir=data
 
-# Clean up the Fedora CoreOS VM and its resources.
+# Clean up the Fedora CoreOS VM but keep its storage resources.
 clean-vm: pre-requisites
 	virsh destroy fcos-$(PROJECT_NAME) || true
 	virsh undefine fcos-$(PROJECT_NAME) --nvram || true
+	rm -f /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/root.qcow2 /var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign
+
+# Remove all resources related to the Fedora CoreOS VM.
+remove-vm: clean-vm
 	rm -rf /var/lib/libvirt/images/fcos-$(PROJECT_NAME)
 	rm -rf /srv/fcos-$(PROJECT_NAME)
 
 # Connect to the console of the Fedora CoreOS VM.
 console: pre-requisites
-	@while sleep 2; do virsh console fcos-$(PROJECT_NAME); echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; done
+	@set -Eeuo pipefail; \
+	# Save the current terminal size to restore it after disconnecting from the VM console. \
+	term_size=$$(stty size); \
+	while sleep 2; do \
+		virsh console fcos-$(PROJECT_NAME); \
+		# Restore the terminal size after disconnecting from the VM console. \
+		# This avoids issues with the terminal being stuck in an incorrect size because \
+		# of the UEFI / Grub TUI messed with the terminal size during a VM reboot. \
+		eval $$(resize -s $$term_size); \
+		echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; \
+	done
 
 # List all systemd and quadlet unit names provided by the dependencies of this project.
 units-pre::
@@ -350,6 +422,7 @@ units: units-pre
 # This target can be extended by Makefiles sourcing this one.
 clean-pre::
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
     for dep in $(DEPENDENCIES); do \
 		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep clean; \
 	done
@@ -360,8 +433,9 @@ clean-post::
 
 # Remove all persistent data and configuration files
 clean: clean-pre pre-requisites
-	rm -f *.butane
+	rm -f *.bu *.ign butane.blocklist
 	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
 	if [ "$(I_KNOW_WHAT_I_AM_DOING)" != "yes" ]; then \
 		read -p "This will remove all data of '$(PROJECT_NAME)'. Are you sure? (only 'yes' is accepted) " ans; \
 		if [ "$$ans" != "yes" ] && [ "$$ans" != "YES" ]; then \
@@ -373,7 +447,7 @@ clean: clean-pre pre-requisites
 
 # All phony targets
 .PHONY: all install install-config install-examples uninstall pre-requisites clean dryrun
-.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre
+.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre remove-vm
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 .PHONY: install-files install-files-pre install-files-post install-actions
-.PHONY: install-actions-pre install-actions-post
+.PHONY: install-actions-pre install-actions-post butane-prerequisites butane-pre

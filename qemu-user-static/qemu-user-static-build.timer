@@ -1,0 +1,11 @@
+[Unit]
+Description=multiarch /usr/bin/qemu-*-static
+Documentation=https://github.com/multiarch/qemu-user-static
+PartOf=qemu-user-static.target
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=qemu-user-static.target
