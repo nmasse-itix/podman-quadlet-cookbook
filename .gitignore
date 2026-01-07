@@ -1,4 +1,5 @@
 *.bu
 *.ign
 !fcos.bu
+!overlay.bu
 */butane.blocklist

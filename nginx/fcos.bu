@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+ignition:
+  config:
+    merge:
+    - local: base.ign
+    - local: nginx.ign
+    - local: nginx-examples.ign
+    - local: local.ign

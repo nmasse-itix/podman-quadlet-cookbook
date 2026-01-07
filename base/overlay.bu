@@ -1,0 +1,43 @@
+variant: fcos
+version: 1.4.0
+storage:
+  disks:
+  - device: /dev/vdb
+    wipe_table: false
+    partitions:
+    # Specify the partition number so that FCOS do not try to create a new
+    # partition at each VM redeployment.
+    - number: 1
+      size_mib: 0
+      start_mib: 0
+      label: var
+  filesystems:
+  - path: /var
+    device: /dev/disk/by-partlabel/var
+    format: xfs
+    with_mount_unit: true
+  directories:
+  - path: /var/lib/private/sshd
+    mode: 0700
+  files:
+  - path: /etc/resolv.conf
+    overwrite: true
+    contents:
+      inline: "" # will be updated by NetworkManager
+  - path: /etc/NetworkManager/conf.d/itix.conf
+    contents:
+      inline: |
+        [main]
+        # test
+        rc-manager=file
+systemd:
+  units:
+  - name: systemd-resolved.service
+    enabled: false
+    mask: true
+  - name: sshd-keygen@.service
+    dropins:
+    - name: backup-restore.conf
+      contents: |
+        [Service]
+        ExecStartPost=/bin/bash -c 'if [ -f /var/lib/private/sshd/ssh_host_%i_key ]; then cp -Z /var/lib/private/sshd/ssh_host_%i_key{,.pub} /etc/ssh/; elif [ -f /etc/ssh/ssh_host_%i_key ]; then cp -a /etc/ssh/ssh_host_%i_key{,.pub} /var/lib/private/sshd/; fi'

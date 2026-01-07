@@ -294,8 +294,9 @@ butane-prerequisites:
 
 # Build the Butane specifications (configuration files) suitable for Fedora CoreOS.
 # In order to avoid duplications in the ignition files, a blocklist is updated, containing file paths as they are added to the chroot.
+$(PROJECT_NAME).bu: YQ_FILES := $(shell if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)
 $(PROJECT_NAME).bu: butane-prerequisites install-config
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) > $(PROJECT_NAME).bu
+	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $(YQ_FILES) > $(PROJECT_NAME).bu  
 	@(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"
 
 # Build the Butane specifications (example files) suitable for Fedora CoreOS.
@@ -403,7 +404,7 @@ console: pre-requisites
 		virsh console fcos-$(PROJECT_NAME); \
 		# Restore the terminal size after disconnecting from the VM console. \
 		# This avoids issues with the terminal being stuck in an incorrect size because \
-		# of the UEFI / Grub TUI messed with the terminal size during a VM reboot. \
+		# the UEFI / Grub TUI messed with the terminal size during a VM reboot. \
 		eval $$(resize -s $$term_size); \
 		echo -e "Disconnected. Reconnecting in 2 seconds...\nPress Ctrl-C to abort.\n"; \
 	done
@@ -433,7 +434,7 @@ clean-post::
 
 # Remove all persistent data and configuration files
 clean: clean-pre pre-requisites
-	rm -f *.bu *.ign butane.blocklist
+	rm -f $(PROJECT_NAME){,-examples}.bu *.ign butane.blocklist
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
 	if [ "$(I_KNOW_WHAT_I_AM_DOING)" != "yes" ]; then \
