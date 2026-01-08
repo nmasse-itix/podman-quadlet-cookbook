@@ -1,0 +1,13 @@
+http:
+  routers:
+    collabora:
+      rule: "Host(`collabora`)"
+      entryPoints:
+      - http
+      middlewares:
+      service: "collabora"
+  services:
+    collabora:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:9980"

@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: traefik
+    uid: 10001
+    gecos: Traefik
+    home_dir: /var/lib/quadlets/traefik
+    primary_group: itix-svc

@@ -1,0 +1,43 @@
+[Unit]
+Description=Traefik reverse proxy
+Documentation=https://github.com/traefik/traefik-library-image
+After=local-fs.target network.target
+Before=traefik.target
+
+# Start/stop this unit when the target is started/stopped
+PartOf=traefik.target
+
+[Container]
+ContainerName=traefik
+
+# Image
+Image=docker.io/library/traefik:v3.4
+AutoUpdate=registry
+
+# No need for root privileges
+User=10001
+Group=10000
+AddCapability=CAP_NET_BIND_SERVICE
+
+# Storage
+Volume=/var/lib/quadlets/traefik:/var/lib/traefik:z
+Volume=/etc/quadlets/traefik:/etc/traefik:z
+
+# Network
+Network=host
+
+# Health check
+HealthCmd=wget -q -O /dev/null --header 'Host: ping' http://127.0.0.1/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=traefik.target

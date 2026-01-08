@@ -18,6 +18,7 @@ PartOf=postgresql.target
 [Container]
 ContainerName=postgresql-server
 Image=docker.io/library/postgres:${PG_MAJOR}-alpine
+AutoUpdate=registry
 
 # Network configuration
 Network=host

@@ -2,7 +2,7 @@
 ## Makefile for PostgreSQL quadlet
 ##
 
-DEPENDENCIES = postgresql
+DEPENDENCIES = postgresql traefik
 
 # Nextcloud quadlet is mapped to the 10008 user (nextcloud) and 10000 group (itix-svc)
 PROJECT_UID = 10008
@@ -32,9 +32,13 @@ $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
 
 install-config: $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
 
-install-examples: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql
+install-examples: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/nextcloud.yaml $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/collabora.yaml
+
 $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql: other/nextcloud.sql
-	install -m 0644 -o 10004 -g 10000 $< $@
+	install -m 0600 -o 10004 -g 10000 $< $@
+
+$(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/nextcloud.yaml $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/collabora.yaml: $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/%.yaml: other/traefik-%.yaml
+	install -m 0644 -o 10001 -g 10000 $< $@
 
 test: 
 	@run() { echo $$*; "$$@"; }; \

@@ -4,7 +4,7 @@ Documentation=https://hub.docker.com/_/nextcloud/
 PartOf=nextcloud.target
 
 [Timer]
-OnActiveSec=15min
+OnActiveSec=5min
 RandomizedDelaySec=15s
 DeferReactivation=true
 

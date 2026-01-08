@@ -30,6 +30,10 @@ GIDMap=+82:10000:1
 Network=host
 AddCapability=CAP_NET_BIND_SERVICE
 
+# Allow Nextcloud to talk to itself through the same hostname as used by clients
+AddHost=nextcloud:127.0.0.1
+AddHost=collabora:127.0.0.1
+
 # Environment variables from secrets and config
 EnvironmentFile=/etc/quadlets/nextcloud/config.env
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL Service Target
+Documentation=man:systemd.target(5)
+Requires=traefik.service
+After=traefik.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

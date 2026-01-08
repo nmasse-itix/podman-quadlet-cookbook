@@ -1,0 +1,15 @@
+http:
+  routers:
+    traefik-ping:
+      rule: Host(`ping`)
+      entryPoints:
+      - http
+      service: "ping@internal"
+      middlewares:
+      - localhost-only
+  services: {}
+  middlewares:
+    localhost-only:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"

@@ -15,6 +15,7 @@ PartOf=nginx.target
 [Container]
 ContainerName=nginx-server
 Image=docker.io/library/nginx:mainline-alpine
+AutoUpdate=registry
 
 # Network configuration
 Network=host

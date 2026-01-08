@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: nextcloud
+    uid: 10008
+    gecos: Nextcloud
+    home_dir: /var/lib/quadlets/nextcloud
+    primary_group: itix-svc

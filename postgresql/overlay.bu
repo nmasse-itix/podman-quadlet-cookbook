@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: postgresql
+    uid: 10004
+    gecos: PostgreSQL
+    home_dir: /var/lib/quadlets/postgresql
+    primary_group: itix-svc

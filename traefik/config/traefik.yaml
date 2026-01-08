@@ -1,0 +1,34 @@
+api:
+  dashboard: true
+  debug: false
+ping:
+  manualRouting: true
+
+log:
+  level: "INFO"
+
+accesslog: false
+
+global:
+  sendanonymoususage: false
+  checknewversion: false
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+
+certificatesResolvers:
+  le:
+    acme:
+      email: "nicolas.masse@itix.fr"
+      keyType: "EC384"
+      httpChallenge:
+        # used during the challenge
+        entryPoint: http
+      storage: "/var/lib/traefik/acme.json"
+providers:
+  file:
+    directory: /etc/traefik/conf.d/
+    watch: true

@@ -29,6 +29,10 @@ SeccompProfile=/etc/quadlets/nextcloud/collabora-seccomp-profile.json
 # Network configuration
 Network=host
 
+# Collabora needs to connect to Nextcloud through the same hostname as used by clients
+AddHost=nextcloud:127.0.0.1
+AddHost=collabora:127.0.0.1
+
 # Environment variables from secrets and config
 EnvironmentFile=/etc/quadlets/nextcloud/collabora.env
 

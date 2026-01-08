@@ -41,3 +41,19 @@ systemd:
       contents: |
         [Service]
         ExecStartPost=/bin/bash -c 'if [ -f /var/lib/private/sshd/ssh_host_%i_key ]; then cp -Z /var/lib/private/sshd/ssh_host_%i_key{,.pub} /etc/ssh/; elif [ -f /etc/ssh/ssh_host_%i_key ]; then cp -a /etc/ssh/ssh_host_%i_key{,.pub} /var/lib/private/sshd/; fi'
+passwd:
+  users:
+  - name: core
+    should_exist: false
+  - name: itix-svc
+    uid: 10000
+    gecos: ITIX Misc. Services
+    home_dir: /tmp
+    primary_group: itix-svc
+  groups:
+  - name: core
+    should_exist: false
+  - name: itix
+    gid: 1000
+  - name: itix-svc
+    gid: 10000

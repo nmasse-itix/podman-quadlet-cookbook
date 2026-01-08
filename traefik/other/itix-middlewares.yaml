@@ -1,0 +1,16 @@
+http:
+  middlewares:
+    ## Password hashes can be generated with:
+    #
+    #    htpasswd -n -B -C 10 <username>
+    #
+    itix-admins:
+      basicAuth:
+        realm: "ITIX"
+        headerField: "X-WebAuth-User"
+        usersFile: "/etc/traefik/itix-admins.txt"
+    itix-users:
+      basicAuth:
+        realm: "ITIX"
+        headerField: "X-WebAuth-User"
+        usersFile: "/etc/traefik/itix-users.txt"
