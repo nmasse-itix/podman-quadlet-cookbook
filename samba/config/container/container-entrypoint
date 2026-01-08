@@ -1,0 +1,10 @@
+#!/bin/bash
+set -Eeuo pipefail
+echo -n > /etc/samba/smb.conf
+for file in /etc/samba/smb.conf.d/*.conf; do
+    echo "Using config file from $file..."
+    cat $file >> /etc/samba/smb.conf
+    echo >> /etc/samba/smb.conf
+done
+mkdir -p /var/lib/samba/lock /var/lib/samba/private /run/samba
+exec /usr/sbin/smbd --foreground --no-process-group --debug-stdout "$@"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Lego Let's Encrypt client - Renew a certificate
+Documentation=https://go-acme.github.io/lego/
+PartOf=lego.target
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=lego.target

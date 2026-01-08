@@ -73,28 +73,32 @@ SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
 SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
 
 # Configuration files
-CONFIG_FILES := $(shell find config/ -mindepth 1 \! -path "config/examples/*")
+CONFIG_FILES := $(shell find config/ -mindepth 1 \! -path "config/examples/*" \! -path "config/examples" 2>/dev/null)
 TMPFILESD_FILES = $(filter-out %/examples, $(wildcard tmpfiles.d/*))
 SYSCTLD_FILES = $(filter-out %/examples, $(wildcard sysctl.d/*))
+PROFILED_FILES = $(filter-out %/examples, $(wildcard profile.d/*))
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
 TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(TMPFILESD_FILES))
 TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
+TARGET_PROFILED_FILES = $(patsubst profile.d/%, $(TARGET_CHROOT)/etc/profile.d/%, $(PROFILED_FILES))
 
 # Example configuration files
-EXAMPLES_CONFIG_FILES := $(shell find config/examples -mindepth 1)
+EXAMPLES_CONFIG_FILES := $(shell find config/examples -mindepth 1 2>/dev/null)
 EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
 EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
+EXAMPLES_PROFILED_FILES = $(wildcard profile.d/examples/*)
 TARGET_EXAMPLES_CONFIG_FILES = $(patsubst config/examples/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(EXAMPLES_CONFIG_FILES))
 TARGET_EXAMPLES_TMPFILESD_FILES = $(patsubst tmpfiles.d/examples/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(EXAMPLES_TMPFILESD_FILES))
 TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(EXAMPLES_SYSCTLD_FILES))
+TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
 
 # All configuration files to be installed
 TARGET_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
 				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
-				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES)
+				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES) $(TARGET_PROFILED_FILES)
 
 # All example configuration files to be installed
-TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES)
+TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES)
 
 # Dependencies on other projects
 # List here the names of other projects (directories at the top-level) that this project depends on.
@@ -110,6 +114,10 @@ DEPENDENCIES_IGNITION_FILES := $(shell for dep in base $(DEPENDENCIES); do echo 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
 PROJECT_GID ?= 0
+
+# Function to reverse a list of words
+# Usage: $(call reverse,word1 word2 word3)
+reverse = $(let first rest,$1,$(if $(rest),$(call reverse,$(rest)) )$(first))
 
 # Ensure that the Makefile is not run from the top-level directory and that it is run as root.
 pre-requisites:
@@ -179,6 +187,12 @@ $(TARGET_TMPFILESD_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES):
 $(TARGET_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/% $(TARGET_CHROOT)/etc/sysctl.d
 $(TARGET_EXAMPLES_SYSCTLD_FILES): $(TARGET_CHROOT)/etc/sysctl.d/%: sysctl.d/examples/% $(TARGET_CHROOT)/etc/sysctl.d
 $(TARGET_SYSCTLD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES):
+	install -D -m 0644 -o root -g root $< $@
+
+# Copy profile.d files
+$(TARGET_PROFILED_FILES): $(TARGET_CHROOT)/etc/profile.d/%: profile.d/% $(TARGET_CHROOT)/etc/profile.d
+$(TARGET_EXAMPLES_PROFILED_FILES): $(TARGET_CHROOT)/etc/profile.d/%: profile.d/examples/% $(TARGET_CHROOT)/etc/profile.d
+$(TARGET_PROFILED_FILES) $(TARGET_EXAMPLES_PROFILED_FILES):
 	install -D -m 0644 -o root -g root $< $@
 
 # Create the directory to store quadlet state and data.
@@ -252,6 +266,8 @@ install-pre::
 install-post::
 
 # Uninstall all quadlets and systemd units installed by this project.
+
+uninstall: FILES_TO_REMOVE := $(call reverse,$(TARGET_EXAMPLE_FILES) $(TARGET_FILES))
 uninstall: pre-requisites uninstall-pre
 	systemctl disable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) || true
 	systemctl stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
@@ -260,7 +276,7 @@ uninstall: pre-requisites uninstall-pre
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --purge /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi
-	rm -df $(TARGET_FILES) $(TARGET_EXAMPLE_FILES)
+	rm -df $(FILES_TO_REMOVE)
 	systemctl daemon-reload
 	$(MAKE) uninstall-post
 

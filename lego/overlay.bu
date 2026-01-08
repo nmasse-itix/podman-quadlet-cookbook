@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: lego
+    uid: 10023
+    gecos: Lego Let's Encrypt client
+    home_dir: /var/lib/quadlets/lego
+    primary_group: itix-svc

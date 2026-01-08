@@ -1,0 +1,15 @@
+FROM quay.io/centos/centos:stream10
+
+# Install Samba
+RUN dnf install -y samba samba-client cifs-utils shadow-utils procps-ng \
+    && dnf clean all
+
+# /data holds the samba shares, /run/samba is for temporary files (non-persistent)
+VOLUME /data /run
+
+# We only run smb (no nmb)
+EXPOSE 445
+
+ADD container-entrypoint /
+ENTRYPOINT [ "/container-entrypoint" ]
+CMD [ ]

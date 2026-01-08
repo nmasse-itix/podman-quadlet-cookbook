@@ -1,0 +1,13 @@
+[Unit]
+Description=Install fastfetch
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=!/usr/local/bin/fastfetch
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/quadlets/base/install-fastfetch.sh
+
+[Install]
+WantedBy=multi-user.target

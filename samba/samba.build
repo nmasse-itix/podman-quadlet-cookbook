@@ -1,0 +1,9 @@
+[Unit]
+Description=Build of the Samba daemon
+Wants=network-online.target
+After=network-online.target
+
+[Build]
+File=/etc/quadlets/samba/container/Containerfile
+ImageTag=localhost/samba:latest
+SetWorkingDirectory=/etc/quadlets/samba/container

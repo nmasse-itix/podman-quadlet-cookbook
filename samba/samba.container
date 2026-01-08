@@ -1,0 +1,39 @@
+[Unit]
+Description=Samba
+After=samba-build.service
+Wants=samba-build.service
+Requires=var-lib-virtiofs-data.mount
+
+# Start/stop this unit when the target is started/stopped
+PartOf=samba.target
+
+# Start Samba only if at least one share configuration file exists
+ConditionPathExistsGlob=/etc/quadlets/samba/smb.conf.d/*shares.conf
+
+[Container]
+ContainerName=samba
+
+# Image
+Image=localhost/samba:latest
+AutoUpdate=local
+
+# Security
+User=0
+
+# Storage
+Volume=/var/lib/quadlets/samba/data:/var/lib/samba:Z
+Volume=/var/lib/quadlets/samba/log:/var/log/samba:Z
+Volume=/var/lib/virtiofs/data:/data
+Volume=/etc/quadlets/samba/smb.conf.d:/etc/samba/smb.conf.d:Z
+Volume=/run/quadlets/samba/passwd:/etc/passwd:Z
+Volume=/run/quadlets/samba/group:/etc/group:Z
+Volume=/run/quadlets/samba/shadow:/etc/shadow:Z
+
+# Network
+Network=host
+
+# Samba debug level
+Exec=--debuglevel=1
+
+[Install]
+WantedBy=samba.target

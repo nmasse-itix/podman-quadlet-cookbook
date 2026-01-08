@@ -5,6 +5,6 @@ Wants=network-online.target
 After=network-online.target
 
 [Build]
-File=/etc/quadlets/qemu-user-static/Containerfile
+File=/etc/quadlets/qemu-user-static/container/Containerfile
 ImageTag=localhost/qemu-user-static:latest
-SetWorkingDirectory=/etc/quadlets/qemu-user-static
+SetWorkingDirectory=/etc/quadlets/qemu-user-static/container

@@ -9,3 +9,4 @@
 /etc/containers/systemd
 /etc/tmpfiles.d
 /etc/sysctl.d
+/etc/profile.d

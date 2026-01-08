@@ -1,0 +1,12 @@
+[Unit]
+Description=Lego Let's Encrypt client
+Documentation=https://go-acme.github.io/lego/
+Requires=lego-run.service lego-renew.timer
+After=lego-run.service lego-renew.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+# Start by default on boot
+WantedBy=multi-user.target default.target

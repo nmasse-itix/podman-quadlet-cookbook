@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the samba container image
+PartOf=samba.target
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=samba.target

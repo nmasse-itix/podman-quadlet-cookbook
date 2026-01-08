@@ -1,0 +1,14 @@
+[Unit]
+Description=Samba Service Target
+Documentation=man:systemd.target(5)
+Requires=samba.service
+After=samba.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+# Start Samba only if at least one share configuration file exists
+ConditionPathExistsGlob=/etc/quadlets/samba/smb.conf.d/*shares.conf
+
+[Install]
+WantedBy=multi-user.target

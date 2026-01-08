@@ -1,0 +1,110 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "padding": {
+            "top": 2
+        }
+    },
+    "display": {
+        "showErrors": false,
+        "size": {
+            "ndigits": 0,
+            "maxPrefix": "GB"
+        },
+        "separator": "",
+        "color": {
+            "keys": "blue",
+            "title": "blue"
+        },
+        "key": {
+            "width": 36,
+            "type": "string"
+        },
+        "bar": {
+            "width": 16,
+            "charElapsed": "■",
+            "charTotal": "-"
+        },
+        "percent": {
+            "type": 3,
+            "color": {
+                "green": "green",
+                "yellow": "light_yellow",
+                "red": "light_red"
+            }
+        }
+    },
+    "modules": [
+        {
+            "type": "custom",
+            "key": "     ------- Software -------     ",
+            "format": " "
+        },
+        "os",
+        "kernel",
+        "break",
+        {
+            "type": "custom",
+            "key": "     ------- Hardware -------     ",
+            "format": " "
+        },
+        "host",
+        "cpu",
+        {
+            "type": "physicaldisk",
+            "key": "Disk {dev-path}",
+            "format": "{size>10}  {serial}"
+        },
+        "break",
+        {
+            "type": "custom",
+            "key": "     ---- Resource Usage ----     ",
+            "format": " "
+        },
+        {
+            "type": "memory",
+            "key": "Memory",
+            "format": "{percentage-bar} {percentage>4}"
+        },
+        {
+            "type": "disk",
+            "format": "{size-percentage-bar} {size-percentage>4}",
+            "key": "Vol. /",
+            "folders": "/sysroot",
+            "percent": {
+                "green": 75,
+                "yellow": 90
+            }
+        },
+        {
+            "type": "disk",
+            "format": "{size-percentage-bar} {size-percentage>4}",
+            "key": "Vol. {mountpoint}",
+            "folders": "/var:/var/lib/virtiofs/data",
+            "percent": {
+                "green": 75,
+                "yellow": 90
+            }
+        },
+        "break",
+        {
+            "type": "custom",
+            "key": "     ------ Environment ------     ",
+            "format": " "
+        },
+        {
+            "type": "title",
+            "key": "User",
+            "format": "{user-name-colored}"
+        },
+        "uptime",
+        {
+            "type": "title",
+            "key": "Hostname",
+            "format": "{host-name}",
+            "fqdn": true
+        },
+        "localip",
+        "publicip"
+    ]
+}

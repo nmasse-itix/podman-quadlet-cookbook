@@ -1,0 +1,52 @@
+[Unit]
+Description=Lego Let's Encrypt client - Renew a certificate
+Documentation=https://go-acme.github.io/lego/
+
+# Only start if there are certificates to renew
+ConditionPathExistsGlob=/var/lib/quadlets/lego/certificates/*.crt
+# and if Lego has been configured !
+ConditionPathExists=/etc/quadlets/lego/config.env
+
+[Container]
+ContainerName=lego-renew
+
+# No need for root privileges
+User=10023
+Group=10000
+
+# Image
+Image=docker.io/goacme/lego:latest
+AutoUpdate=registry
+
+# Network configuration
+Network=host
+
+# Environment variables from config
+EnvironmentFile=/etc/quadlets/lego/config.env
+
+# Volume mounts
+Volume=/var/lib/quadlets/lego:/.lego:z
+Volume=/etc/quadlets/lego/hooks:/etc/lego/hooks:ro
+
+# Be safe, set the umask to 0077 so that private keys are not world-readable
+PodmanArgs=--umask=0077
+
+# Command to run
+Exec=$LEGO_GLOBAL_ARGS renew $LEGO_RENEW_ARGS
+
+[Service]
+# If the command fails, don't try to restart it.
+# Otherwise, we would hammer the Let's Encrypt servers and possibly get banned.
+Restart=no
+
+# Getting a certificate may take some time
+TimeoutStartSec=600
+
+# This container is a job - run once to completion
+Type=oneshot
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/lego/config.env
+
+[Install]
+WantedBy=lego.target
