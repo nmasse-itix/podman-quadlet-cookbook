@@ -73,7 +73,7 @@ SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
 SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
 
 # Configuration files
-CONFIG_FILES = $(filter-out %/examples, $(wildcard config/*))
+CONFIG_FILES := $(shell find config/ -mindepth 1 \! -path "config/examples/*")
 TMPFILESD_FILES = $(filter-out %/examples, $(wildcard tmpfiles.d/*))
 SYSCTLD_FILES = $(filter-out %/examples, $(wildcard sysctl.d/*))
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
@@ -81,7 +81,7 @@ TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.
 TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
 
 # Example configuration files
-EXAMPLES_CONFIG_FILES = $(wildcard config/examples/*)
+EXAMPLES_CONFIG_FILES := $(shell find config/examples -mindepth 1)
 EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
 EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
 TARGET_EXAMPLES_CONFIG_FILES = $(patsubst config/examples/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(EXAMPLES_CONFIG_FILES))
@@ -155,11 +155,15 @@ $(TARGET_EXAMPLES_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%
 $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
-	if [ -x $< ]; then \
-		run install -D -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
+	if [ -d $< ]; then \
+		run install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@; \
 	else \
-		run install -D -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
-	fi
+		if [ -x $< ]; then \
+			run install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
+		else \
+			run install -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
+		fi ; \
+	fi; \
 
 # Handle .env files separately to set more restrictive permissions
 $(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
@@ -256,7 +260,7 @@ uninstall: pre-requisites uninstall-pre
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --purge /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi
-	rm -f $(TARGET_FILES) $(TARGET_EXAMPLE_FILES)
+	rm -df $(TARGET_FILES) $(TARGET_EXAMPLE_FILES)
 	systemctl daemon-reload
 	$(MAKE) uninstall-post
 
