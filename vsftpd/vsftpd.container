@@ -1,0 +1,52 @@
+[Unit]
+Description=Vsftpd
+After=local-fs.target network.target vsftpd-build.service lego.target
+Wants=vsftpd-build.service lego.target
+
+# Only start if the local configuration file exists
+ConditionPathExists=/etc/quadlets/vsftpd/vsftpd.conf.d/local.conf
+
+# Stop when the target is stopped
+PartOf=vsftpd.target
+
+[Service]
+# Copy a complete version of /etc/{passwd,group,shadow} in /run/quadlets/vsftpd so that SELinux
+# does not prevent Vsftpd from reading those files.
+#
+# Oh, and by the way, mangle /etc/passwd so that local users' homes are located in /data.
+# This is required by Vsftpd to let the users login.
+ExecStartPre=/bin/sh -Eeuo pipefail -c '\
+    umask 0077 ; \
+    for file in passwd group shadow; do \
+    getent $file | (if [[ "$file" == "passwd" ]]; then \
+                        sed -r "s|^([^:]+:[^:]*:[^:]+:1[0-9][0-9][0-9]:[^:]*:)[^:]*(:.*)$|\\1/data\\2|" ; \
+                    else \
+                        cat ; \
+                    fi) > /run/quadlets/vsftpd/cache/$file ; \
+    done'
+
+[Container]
+ContainerName=vsftpd
+
+# Image
+Image=localhost/vsftpd:latest
+AutoUpdate=local
+
+# Security
+User=0
+
+# Storage
+Volume=/var/lib/quadlets/vsftpd/log:/var/log/vsftpd:Z
+Volume=/var/lib/quadlets/vsftpd/data:/var/lib/vsftpd:Z
+Volume=/var/lib/virtiofs/data/storage:/data
+Volume=/etc/quadlets/vsftpd/vsftpd.conf.d:/etc/vsftpd:ro
+Volume=/run/quadlets/vsftpd/cache/passwd:/etc/passwd:Z
+Volume=/run/quadlets/vsftpd/cache/group:/etc/group:Z
+Volume=/run/quadlets/vsftpd/cache/shadow:/etc/shadow:Z
+Volume=/run/quadlets/vsftpd/tls:/etc/vsftpd/tls:Z
+
+# Network
+Network=host
+
+[Install]
+WantedBy=vsftpd.target

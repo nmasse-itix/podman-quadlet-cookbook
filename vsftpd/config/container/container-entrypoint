@@ -1,0 +1,25 @@
+#!/bin/sh
+set -Eeuo pipefail
+
+# Handle the virtual user database when supplied
+if [ -f /var/lib/vsftpd/users.txt ]; then
+    ## Format of the "users.txt" file :
+    #
+    #   nicolas:$y$....
+    #   john:$y$....
+    #
+    # Empty lines and comments are allowed
+    #
+    ## Hashes can be generated with :
+    #
+    #   mkpasswd --method=yescrypt -s
+    #
+
+    umask 0077
+    touch /var/lib/vsftpd/users.txt
+    rm -f /var/lib/vsftpd/users.db
+    sed -r -e 's/^([^:]+):([^:]+)$/store "\1" "\2"/; t r; d; :r s/[\\]/\\\\$/g; s/[$]/\\$/g' < /var/lib/vsftpd/users.txt | gdbmtool --newdb /var/lib/vsftpd/users.db
+    umask 0022
+fi
+
+exec /usr/sbin/vsftpd -obackground=NO /etc/vsftpd/global.conf /etc/vsftpd/local.conf "$@"

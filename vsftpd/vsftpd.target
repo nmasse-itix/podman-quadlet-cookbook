@@ -1,0 +1,11 @@
+[Unit]
+Description=Vsftpd Service Target
+Documentation=man:systemd.target(5)
+Requires=vsftpd.service vsftpd-build.timer
+After=vsftpd.service vsftpd-build.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

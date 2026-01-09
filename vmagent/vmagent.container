@@ -1,0 +1,33 @@
+[Unit]
+Description=Victoria Metrics agent
+After=local-fs.target network.target
+Wants=network.target
+
+# Only start if the local configuration file exists
+ConditionPathExists=/etc/quadlets/vmagent/vmagent.local.env
+
+[Container]
+ContainerName=vmagent
+
+# Image
+Image=quay.io/victoriametrics/vmagent:latest
+AutoUpdate=registry
+
+# Security
+User=10025
+Group=10000
+
+# Storage
+Volume=/var/lib/quadlets/vmagent:/var/lib/vmagent:Z
+Volume=/etc/quadlets/vmagent/conf.d:/etc/vmagent:ro
+
+# Network
+Network=host
+
+# Configuration
+EnvironmentFile=/etc/quadlets/vmagent/vmagent.global.env
+EnvironmentFile=/etc/quadlets/vmagent/vmagent.local.env
+Exec=-envflag.enable
+
+[Install]
+WantedBy=multi-user.target

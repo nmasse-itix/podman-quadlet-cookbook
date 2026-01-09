@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: vsftpd
+    uid: 10015
+    gecos: Vsftpd
+    home_dir: /var/lib/quadlets/vsftpd
+    primary_group: itix-svc

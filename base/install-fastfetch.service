@@ -8,6 +8,7 @@ ConditionPathExists=!/usr/local/bin/fastfetch
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/etc/quadlets/base/install-fastfetch.sh
+EnvironmentFile=-/etc/quadlets/base/fastfetch.env
 
 [Install]
 WantedBy=multi-user.target

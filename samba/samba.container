@@ -23,7 +23,7 @@ User=0
 # Storage
 Volume=/var/lib/quadlets/samba/data:/var/lib/samba:Z
 Volume=/var/lib/quadlets/samba/log:/var/log/samba:Z
-Volume=/var/lib/virtiofs/data:/data
+Volume=/var/lib/virtiofs/data/storage:/data
 Volume=/etc/quadlets/samba/smb.conf.d:/etc/samba/smb.conf.d:Z
 Volume=/run/quadlets/samba/passwd:/etc/passwd:Z
 Volume=/run/quadlets/samba/group:/etc/group:Z

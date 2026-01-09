@@ -1,0 +1,9 @@
+[Unit]
+Description=Build of the Vsftpd daemon
+Wants=network-online.target
+After=network-online.target
+
+[Build]
+File=/etc/quadlets/vsftpd/container/Containerfile
+ImageTag=localhost/vsftpd:latest
+SetWorkingDirectory=/etc/quadlets/vsftpd/container

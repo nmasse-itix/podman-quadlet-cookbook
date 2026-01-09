@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: vmagent
+    uid: 10025
+    gecos: Victoria Metrics Agent
+    home_dir: /var/lib/quadlets/vmagent
+    primary_group: itix-svc

@@ -120,7 +120,7 @@ PROJECT_GID ?= 0
 reverse = $(let first rest,$1,$(if $(rest),$(call reverse,$(rest)) )$(first))
 
 # Ensure that the Makefile is not run from the top-level directory and that it is run as root.
-pre-requisites:
+pre-requisites::
 	@if [ -z "$(TOP_LEVEL_DIR)" ]; then \
 	    echo "Do not run this Makefile from the top-level directory!" >&2; \
 		exit 1; \
@@ -222,6 +222,11 @@ install-files-pre::
 # This target can be extended by Makefiles sourcing this one.
 install-files-post::
 
+# Generated systemd units (quadlets) cannot be enabled.
+# That's why we filter them out from the list of units to be enabled.
+install-actions uninstall: ENABLE_UNITS = $(filter-out $(QUADLET_UNIT_NAMES),$(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES))
+install-actions uninstall: START_UNITS = $(SYSTEMD_MAIN_UNIT_NAMES)
+
 # Perform post-installation actions such as enabling and starting units.
 install-actions: install-actions-pre
 	systemctl daemon-reload
@@ -233,9 +238,13 @@ install-actions: install-actions-pre
 	fi; \
 	if [ -f /etc/sysctl.d/$(PROJECT_NAME).conf ]; then \
 		run sysctl -q -p /etc/sysctl.d/$(PROJECT_NAME).conf; \
+	fi ; \
+	if [ -n "$(ENABLE_UNITS)" ]; then \
+		run systemctl enable $(ENABLE_UNITS); \
+	fi ; \
+	if [ -n "$(START_UNITS)" ]; then \
+		run systemctl start $(START_UNITS); \
 	fi
-	systemctl enable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES)
-	systemctl start $(SYSTEMD_MAIN_UNIT_NAMES)
 	$(MAKE) install-actions-post
 
 # Custom commands to be run before performing post-installation actions.
@@ -269,8 +278,14 @@ install-post::
 
 uninstall: FILES_TO_REMOVE := $(call reverse,$(TARGET_EXAMPLE_FILES) $(TARGET_FILES))
 uninstall: pre-requisites uninstall-pre
-	systemctl disable $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) || true
-	systemctl stop $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES) || true
+	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
+	if [ -n "$(ENABLE_UNITS)" ]; then \
+		run systemctl disable $(ENABLE_UNITS) || true; \
+	fi ; \
+	if [ -n "$(START_UNITS)" ]; then \
+		run systemctl stop $(START_UNITS) || true; \
+	fi
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \

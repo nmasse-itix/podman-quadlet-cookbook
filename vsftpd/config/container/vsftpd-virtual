@@ -1,0 +1,27 @@
+#%PAM-1.0
+
+##
+## Debug instructions
+##
+# 
+# - Add the "debug" option to pam_userdb.so
+#
+#   [...] pam_userdb.so db=/var/lib/vsftpd/users crypt=crypt debug
+#
+# - Execute this command in the container:
+# 
+#   socat UNIX-LISTEN:/dev/log,fork STDOUT
+#
+
+##
+## HEADS UP !!!
+##
+#
+# pam_userdb.so is now linked to gdbm rather than berkeley db.
+# so, you have to use gdbmtool to create the database, rather than db_load.
+# Also, the path to the database has to include the final ".db".
+#
+
+auth       required     pam_userdb.so db=/var/lib/vsftpd/users.db crypt=crypt
+account    required     pam_userdb.so db=/var/lib/vsftpd/users.db crypt=crypt
+session    required     pam_loginuid.so

@@ -1,0 +1,20 @@
+FROM quay.io/centos/centos:stream10
+
+# Install Vsftpd
+RUN dnf config-manager --set-enabled crb \
+ && dnf install -y epel-release \
+ && dnf install -y vsftpd procps-ng shadow-utils authselect authselect-libs pam gdbm \
+ && authselect select local --force \
+ && dnf clean all
+
+# /data holds the data to share through vsftpd
+VOLUME /data
+
+# Expose FTP port + ports for passive mode
+EXPOSE 21 20000-20100
+
+ADD container-entrypoint /
+ADD vsftpd-virtual /etc/pam.d/vsftpd-virtual
+
+ENTRYPOINT [ "/container-entrypoint" ]
+CMD [ ]
