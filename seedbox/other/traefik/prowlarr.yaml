@@ -1,0 +1,16 @@
+http:
+  routers:
+    prowlarr:
+      rule: "Host(`prowlarr`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "prowlarr"
+      #tls:
+      #  certResolver: le
+  services:
+    prowlarr:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:9696"

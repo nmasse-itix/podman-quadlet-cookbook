@@ -1,0 +1,35 @@
+[Unit]
+Description=Smart PVR for newsgroup and bittorrent users.
+Documentation=https://docs.linuxserver.io/images/docker-lidarr/
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/var/lib/virtiofs/data
+ConditionPathIsMountPoint=/var/lib/virtiofs/data
+
+[Container]
+ContainerName=lidarr
+
+# Image
+Image=lscr.io/linuxserver/lidarr:latest
+AutoUpdate=registry
+
+# Security
+User=10017
+Group=10000
+
+# Storage
+Volume=/var/lib/virtiofs/data/lidarr/config:/config:z
+Volume=/var/lib/virtiofs/data/storage:/data:z
+
+# Network
+AddCapability=CAP_NET_BIND_SERVICE
+Network=host
+
+# Configuration
+Environment=PUID=10017 PGID=10000 TZ=Etc/UTC HOME=/config TMPDIR=/config/tmp
+Entrypoint=/app/lidarr/bin/Lidarr
+Exec=-nobrowser -data=/config
+WorkingDir=/app/lidarr/bin
+
+[Install]
+WantedBy=seedbox.target

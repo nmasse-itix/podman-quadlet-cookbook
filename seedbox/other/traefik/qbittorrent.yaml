@@ -1,0 +1,16 @@
+http:
+  routers:
+    qbittorrent-webui:
+      rule: "Host(`qbittorrent`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "qbittorrent-webui"
+      #tls:
+      #  certResolver: le
+  services:
+    qbittorrent-webui:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"

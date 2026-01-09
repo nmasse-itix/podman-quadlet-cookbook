@@ -1,0 +1,23 @@
+http:
+  middlewares:
+    ip_from_internal_network:
+      IPAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "192.168.0.0/16"
+  routers:
+    restic:
+      rule: "Host(`restic`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      - ip_from_internal_network
+      service: restic
+      #tls:
+      #  certResolver: le
+  services:
+    restic:
+      loadBalancer:
+        servers:
+        - url: "http://localhost:8080"

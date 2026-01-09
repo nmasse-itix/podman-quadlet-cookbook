@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: seedbox
+    uid: 10017
+    gecos: seedbox
+    home_dir: /var/lib/quadlets/seedbox
+    primary_group: itix-svc

@@ -1,0 +1,16 @@
+http:
+  routers:
+    radarr:
+      rule: "Host(`radarr`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "radarr"
+      #tls:
+      #  certResolver: le
+  services:
+    radarr:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:7878"

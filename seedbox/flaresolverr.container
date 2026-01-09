@@ -1,0 +1,27 @@
+[Unit]
+Description=Proxy server to bypass Cloudflare protection
+Documentation=https://github.com/FlareSolverr/FlareSolverr/
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=flaresolverr
+
+# Image
+Image=ghcr.io/flaresolverr/flaresolverr:latest
+AutoUpdate=registry
+
+# Security
+# <by default it runs as "flaresolverr">
+
+# Storage
+# <no storage>
+
+# Network
+Network=host
+
+# Configuration
+Environment=LOG_LEVEL=debug TZ=Europe/Paris HOST=127.0.0.1 PROMETHEUS_ENABLED=true PROMETHEUS_PORT=8192 LANG=fr_FR
+
+[Install]
+WantedBy=seedbox.target

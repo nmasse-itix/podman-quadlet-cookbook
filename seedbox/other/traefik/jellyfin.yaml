@@ -1,0 +1,16 @@
+http:
+  routers:
+    jellyfin:
+      rule: "Host(`jellyfin`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "jellyfin"
+      #tls:
+      #  certResolver: le
+  services:
+    jellyfin:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8096"

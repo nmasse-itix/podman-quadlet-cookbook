@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the vsftpd container image
+PartOf=vsftpd.target
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=vsftpd.target

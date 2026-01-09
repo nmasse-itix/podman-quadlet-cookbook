@@ -1,0 +1,16 @@
+http:
+  routers:
+    lidarr:
+      rule: "Host(`lidarr`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "lidarr"
+      #tls:
+      #  certResolver: le
+  services:
+    lidarr:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8686"

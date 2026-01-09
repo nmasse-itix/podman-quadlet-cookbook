@@ -1,0 +1,16 @@
+http:
+  routers:
+    sonarr:
+      rule: "Host(`sonarr`)"
+      entryPoints:
+      #- https
+      - http
+      middlewares:
+      service: "sonarr"
+      #tls:
+      #  certResolver: le
+  services:
+    sonarr:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8989"

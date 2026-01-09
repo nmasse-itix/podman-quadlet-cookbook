@@ -1,0 +1,31 @@
+[Unit]
+Description=Restic REST Server
+After=local-fs.target network-online.target
+Wants=network-online.target
+RequiresMountsFor=/var/lib/virtiofs/data /var
+
+[Container]
+ContainerName=restic
+
+# Image
+Image=docker.io/restic/rest-server:latest
+AutoUpdate=registry
+
+# Security
+User=10022
+Group=10000
+
+# Storage
+Volume=/var/lib/virtiofs/data/restic-server:/data:z
+Volume=/var/lib/quadlets/restic-server/log:/var/log/restic:z
+
+# Network
+AddCapability=CAP_NET_BIND_SERVICE
+Network=host
+
+# Configuration
+Environment=OPTIONS="--append-only --listen 127.0.0.1:8080 --log /var/log/restic/rest-server.log --private-repos --prometheus --prometheus-no-auth"
+
+[Install]
+# Start by default on boot
+WantedBy=multi-user.target

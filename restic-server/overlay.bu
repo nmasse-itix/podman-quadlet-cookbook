@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: restic
+    uid: 10022
+    gecos: Restic
+    home_dir: /var/lib/quadlets/restic
+    primary_group: itix-svc

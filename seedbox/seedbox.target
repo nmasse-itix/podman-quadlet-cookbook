@@ -1,0 +1,11 @@
+[Unit]
+Description=Seedbox Service Target
+Documentation=man:systemd.target(5)
+Requires=radarr.service sonarr.service lidarr.service prowlarr.service qbittorrent.service jellyfin.service flaresolverr.service
+After=radarr.service sonarr.service lidarr.service prowlarr.service qbittorrent.service jellyfin.service flaresolverr.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

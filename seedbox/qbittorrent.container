@@ -1,0 +1,36 @@
+[Unit]
+Description=qBittorrent client
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/var/lib/virtiofs/data
+ConditionPathIsMountPoint=/var/lib/virtiofs/data
+
+[Container]
+ContainerName=qbittorrent
+
+# Image
+Image=lscr.io/linuxserver/qbittorrent:latest
+AutoUpdate=registry
+
+# Security
+User=10017
+Group=10000
+
+# Storage
+Volume=/var/lib/virtiofs/data/qbittorrent/config:/config:z
+Volume=/var/lib/virtiofs/data/storage:/data:z
+
+# This volume is required for torrents migrated from the old seedbox
+Volume=/var/lib/virtiofs/data/storage/downloads:/downloads:z
+
+# Network
+AddCapability=CAP_NET_BIND_SERVICE
+Network=host
+
+# Configuration
+Environment=PUID=10017 PGID=10000 TZ=Etc/UTC WEBUI_PORT=8080
+Entrypoint=/usr/bin/qbittorrent-nox
+Exec=--webui-port=8080
+
+[Install]
+WantedBy=seedbox.target
