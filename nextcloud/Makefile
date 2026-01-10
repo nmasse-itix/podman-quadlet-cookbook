@@ -26,7 +26,7 @@ $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
 	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
 
 TOP_LEVEL_DIR := ..
-include $(TOP_LEVEL_DIR)/Makefile.common
+include $(TOP_LEVEL_DIR)/common.mk
 
 .PHONY: test test-set-nextcloud-major
 

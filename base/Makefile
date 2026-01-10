@@ -1,5 +1,5 @@
 TOP_LEVEL_DIR := ..
-include $(TOP_LEVEL_DIR)/Makefile.common
+include $(TOP_LEVEL_DIR)/common.mk
 SYSTEMD_MAIN_UNIT_NAMES += var-lib-virtiofs-data.mount
 SYSTEMD_MAIN_UNIT_NAMES += rpm-ostree-install-qemu-guest-agent.service
 SYSTEMD_MAIN_UNIT_NAMES += install-fastfetch.service

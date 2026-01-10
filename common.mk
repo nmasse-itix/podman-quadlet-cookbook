@@ -116,7 +116,7 @@ PROJECT_UID ?= 0
 PROJECT_GID ?= 0
 
 # Source Makefiles providing hooks to extend this Makefile.
-HOOKS := $(wildcard $(TOP_LEVEL_DIR)/*/Makefile.hooks)
+HOOKS := $(wildcard $(TOP_LEVEL_DIR)/*/hooks.mk)
 include $(HOOKS)
 
 # Ensure that the Makefile is not run from the top-level directory and that it is run as root.

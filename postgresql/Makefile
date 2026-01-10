@@ -12,7 +12,7 @@ $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d:
 
 # Include common Makefile
 TOP_LEVEL_DIR := ..
-include $(TOP_LEVEL_DIR)/Makefile.common
+include $(TOP_LEVEL_DIR)/common.mk
 
 .PHONY: test test-set-pgmajor install-config
 

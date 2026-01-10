@@ -9,5 +9,5 @@ PROJECT_UID = 10010
 PROJECT_GID = 10000
 
 TOP_LEVEL_DIR := ..
-include $(TOP_LEVEL_DIR)/Makefile.common
+include $(TOP_LEVEL_DIR)/common.mk
 
