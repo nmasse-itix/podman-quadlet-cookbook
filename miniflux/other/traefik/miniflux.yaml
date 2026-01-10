@@ -1,0 +1,16 @@
+http:
+  routers:
+    miniflux:
+      rule: "Host(`miniflux`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "miniflux"
+      #tls:
+      #  certResolver: le
+  services:
+    miniflux:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"

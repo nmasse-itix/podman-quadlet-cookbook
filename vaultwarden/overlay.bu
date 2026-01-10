@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: vaultwarden
+    uid: 10020
+    gecos: Vaultwarden
+    home_dir: /var/lib/quadlets/vaultwarden
+    primary_group: itix-svc

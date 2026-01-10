@@ -93,12 +93,12 @@ TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)
 TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
 
 # All configuration files to be installed
-TARGET_FILES = $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
+TARGET_FILES += $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
 				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
 				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES) $(TARGET_PROFILED_FILES)
 
 # All example configuration files to be installed
-TARGET_EXAMPLE_FILES = $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES)
+TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES)
 
 # Dependencies on other projects
 # List here the names of other projects (directories at the top-level) that this project depends on.
@@ -203,7 +203,7 @@ $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
 install-config: $(TARGET_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
 
 # Copy all example configuration files provided by this project.
-install-examples: $(TARGET_EXAMPLE_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+install-examples: $(TARGET_EXAMPLE_FILES)
 
 # Copy all quadlets and systemd files provided by this project.
 install-files: install-files-pre install-config install-examples
@@ -274,9 +274,10 @@ install-pre::
 # This target can be extended by Makefiles sourcing this one.
 install-post::
 
-# Uninstall all quadlets and systemd units installed by this project.
+# All files to be removed during uninstallation, sorted in reverse order to remove files before their parent directories.
+uninstall: FILES_TO_REMOVE := $(shell echo $(TARGET_FILES) $(TARGET_EXAMPLE_FILES) | tr ' ' '\n' | sort -ur | tr '\n' ' ')
 
-uninstall: FILES_TO_REMOVE := $(call reverse,$(TARGET_EXAMPLE_FILES) $(TARGET_FILES))
+# Uninstall all quadlets and systemd units installed by this project.
 uninstall: pre-requisites uninstall-pre
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
@@ -478,7 +479,7 @@ clean: clean-pre pre-requisites
 			echo "Aborted."; exit 1; \
 		fi; \
 	fi
-	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /var/run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
+	rm -rf /var/lib/quadlets/$(PROJECT_NAME)/ /run/quadlets/$(PROJECT_NAME)/ /etc/quadlets/$(PROJECT_NAME)/
 	$(MAKE) clean-post
 
 # All phony targets

@@ -1,0 +1,16 @@
+http:
+  routers:
+    vaultwarden:
+      rule: "Host(`vaultwarden`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "vaultwarden"
+      #tls:
+      #  certResolver: le
+  services:
+    vaultwarden:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"

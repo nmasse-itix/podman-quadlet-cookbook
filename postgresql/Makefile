@@ -6,6 +6,10 @@
 PROJECT_UID = 10004
 PROJECT_GID = 10000
 
+TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d
+$(TARGET_CHROOT)/etc/quadlets/postgresql/init.d:
+	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D -d $@
+
 # Include common Makefile
 TOP_LEVEL_DIR := ..
 include $(TOP_LEVEL_DIR)/Makefile.common
@@ -16,11 +20,6 @@ PG_MAJOR_START ?= 14
 PG_MAJOR_LAST ?= 18
 test-set-pgmajor:
 	sed -i 's/^PG_MAJOR=.*/PG_MAJOR=$(PG_MAJOR_START)/' config/examples/config.env
-
-$(TARGET_CHROOT)/etc/quadlets/postgresql/init.d:
-	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D -d $@
-
-install-config: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d
 
 # Integration tests for PostgreSQL quadlet: backup, restore + major version upgrade (14 to 18)
 test: uninstall clean test-set-pgmajor install

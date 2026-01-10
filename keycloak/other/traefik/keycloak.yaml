@@ -1,0 +1,16 @@
+http:
+  routers:
+    keycloak:
+      rule: "Host(`keycloak`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "keycloak"
+      #tls:
+      #  certResolver: le
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"

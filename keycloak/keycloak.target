@@ -1,0 +1,11 @@
+[Unit]
+Description=Keycloak Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target keycloak.service keycloak-build.timer
+After=postgresql.target keycloak.service keycloak-build.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

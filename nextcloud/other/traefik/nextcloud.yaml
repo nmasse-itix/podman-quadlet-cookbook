@@ -4,8 +4,11 @@ http:
       rule: "Host(`nextcloud`)"
       entryPoints:
       - http
+      #- https
       middlewares:
       service: "nextcloud"
+      #tls:
+      #  certResolver: le
   services:
     nextcloud:
       loadBalancer:

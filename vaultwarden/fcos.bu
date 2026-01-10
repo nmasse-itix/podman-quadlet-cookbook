@@ -1,0 +1,13 @@
+variant: fcos
+version: 1.4.0
+ignition:
+  config:
+    merge:
+    - local: base.ign
+    - local: traefik.ign
+    - local: traefik-examples.ign
+    - local: postgresql.ign
+    - local: postgresql-examples.ign
+    - local: vaultwarden.ign
+    - local: vaultwarden-examples.ign
+    - local: local.ign

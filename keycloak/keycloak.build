@@ -1,0 +1,10 @@
+[Unit]
+Description=Keycloak Container image build
+Documentation=https://www.keycloak.org/server/containers
+Wants=network-online.target
+After=network-online.target
+
+[Build]
+File=/etc/quadlets/keycloak/container/Containerfile
+ImageTag=localhost/keycloak:latest
+SetWorkingDirectory=/etc/quadlets/keycloak/container

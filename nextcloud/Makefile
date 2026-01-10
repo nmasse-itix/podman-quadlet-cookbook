@@ -8,6 +8,35 @@ DEPENDENCIES = postgresql traefik
 PROJECT_UID = 10008
 PROJECT_GID = 10000
 
+# PostgreSQL initialization scripts
+TARGET_POSTGRESQL_FILES = $(patsubst other/postgresql/%, $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/%, $(wildcard other/postgresql/*))
+TARGET_EXAMPLE_FILES += $(TARGET_POSTGRESQL_FILES)
+$(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/%.sql: other/postgresql/%.sql
+	install -m 0600 -o 10004 -g 10000 $< $@
+
+# Traefik configuration files
+TARGET_TRAEFIK_FILES = $(patsubst other/traefik/%, $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/%, $(wildcard other/traefik/*))
+TARGET_EXAMPLE_FILES += $(TARGET_TRAEFIK_FILES)
+$(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/%: other/traefik/%
+	install -m 0644 -o 10001 -g 10000 $< $@
+
+# Additional Nextcloud directories and files
+TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis
+$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis:
+	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
+
+TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data
+TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config
+$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config:
+	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
+
+$(TARGET_CHROOT)/etc/quadlets/nextcloud/www.conf: config/www.conf
+	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D $< $@
+
+TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
+$(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
+	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
+
 TOP_LEVEL_DIR := ..
 include $(TOP_LEVEL_DIR)/Makefile.common
 
@@ -17,28 +46,6 @@ NEXTCLOUD_MAJOR_START ?= 25
 NEXTCLOUD_MAJOR_LAST ?= 31
 test-set-nextcloud-major:
 	sed -i 's/^NEXTCLOUD_MAJOR=.*/NEXTCLOUD_MAJOR=$(NEXTCLOUD_MAJOR_START)/' config/examples/config.env
-
-$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis:
-	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
-
-$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config:
-	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
-
-$(TARGET_CHROOT)/etc/quadlets/nextcloud/www.conf: config/www.conf
-	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D $< $@
-
-$(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
-	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
-
-install-config: $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
-
-install-examples: $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/nextcloud.yaml $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/collabora.yaml
-
-$(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/nextcloud.sql: other/nextcloud.sql
-	install -m 0600 -o 10004 -g 10000 $< $@
-
-$(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/nextcloud.yaml $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/collabora.yaml: $(TARGET_CHROOT)/etc/quadlets/traefik/conf.d/%.yaml: other/traefik-%.yaml
-	install -m 0644 -o 10001 -g 10000 $< $@
 
 test: 
 	@run() { echo $$*; "$$@"; }; \

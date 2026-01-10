@@ -1,0 +1,11 @@
+[Unit]
+Description=Keycloak Container image build timer
+Documentation=https://www.keycloak.org/server/containers
+PartOf=keycloak.target
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=keycloak.target

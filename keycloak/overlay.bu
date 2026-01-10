@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: keycloak
+    uid: 10007
+    gecos: Keycloak
+    home_dir: /var/lib/quadlets/keycloak
+    primary_group: itix-svc

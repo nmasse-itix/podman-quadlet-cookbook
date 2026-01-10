@@ -1,0 +1,48 @@
+[Unit]
+Description=Miniflux RSS Reader
+Documentation=https://github.com/miniflux/v2
+After=network.target 
+
+# Only start if Miniflux has been configured
+ConditionPathExists=/etc/quadlets/miniflux/miniflux.conf
+
+# Start/stop this unit when the target is started/stopped
+PartOf=miniflux.target
+
+[Container]
+ContainerName=miniflux
+Image=ghcr.io/miniflux/miniflux:latest
+AutoUpdate=registry
+
+# Network configuration
+Network=host
+
+# No need for root privileges
+User=10010
+Group=10000
+
+# Command and arguments
+Entrypoint=/usr/bin/miniflux
+Exec=-c /etc/miniflux/miniflux.conf
+
+# Volume mounts
+Volume=/etc/quadlets/miniflux/miniflux.conf:/etc/miniflux/miniflux.conf:ro,z
+
+# Health check
+HealthCmd=/usr/bin/miniflux -healthcheck auto
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=miniflux.target

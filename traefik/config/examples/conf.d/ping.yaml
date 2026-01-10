@@ -7,7 +7,6 @@ http:
       service: "ping@internal"
       middlewares:
       - localhost-only
-  services: {}
   middlewares:
     localhost-only:
       ipAllowList:

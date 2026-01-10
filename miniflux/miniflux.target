@@ -1,0 +1,13 @@
+[Unit]
+Description=Miniflux Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target miniflux.service
+After=postgresql.target miniflux.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Miniflux has been configured
+ConditionPathExists=/etc/quadlets/miniflux/miniflux.conf
+
+[Install]
+WantedBy=multi-user.target

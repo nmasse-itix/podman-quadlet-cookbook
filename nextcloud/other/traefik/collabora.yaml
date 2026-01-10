@@ -4,8 +4,11 @@ http:
       rule: "Host(`collabora`)"
       entryPoints:
       - http
+      #- https
       middlewares:
       service: "collabora"
+      #tls:
+      #  certResolver: le
   services:
     collabora:
       loadBalancer:

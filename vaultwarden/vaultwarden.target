@@ -1,0 +1,13 @@
+[Unit]
+Description=Vaultwarden Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target vaultwarden.service
+After=postgresql.target vaultwarden.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Vaultwarden has been configured
+ConditionPathExists=/etc/quadlets/vaultwarden/config.env
+
+[Install]
+WantedBy=multi-user.target

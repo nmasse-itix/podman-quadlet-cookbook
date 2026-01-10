@@ -1,0 +1,48 @@
+[Unit]
+Description=Vaultwarden
+Documentation=https://github.com/dani-garcia/vaultwarden
+After=network.target var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Only start if Vaultwarden has been configured
+ConditionPathExists=/etc/quadlets/vaultwarden/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=vaultwarden.target
+
+[Container]
+ContainerName=vaultwarden
+Image=quay.io/vaultwarden/server:latest-alpine
+AutoUpdate=registry
+
+# No need for root privileges
+User=10020
+Group=10000
+
+# Network configuration
+Network=host
+
+# Environment file
+EnvironmentFile=/etc/quadlets/vaultwarden/config.env
+
+# Volume mounts
+Volume=/var/lib/virtiofs/data/vaultwarden:/data:z
+
+# Health check
+HealthCmd=curl -sSf http://127.0.0.1:8080/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=vaultwarden.target

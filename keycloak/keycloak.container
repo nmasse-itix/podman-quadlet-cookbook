@@ -1,0 +1,44 @@
+[Unit]
+Description=Keycloak Service
+Documentation=https://www.keycloak.org/server/containers
+After=network.target keycloak-build.service
+Wants=keycloak-build.service
+
+# Only start if Keycloak has been configured
+ConditionPathExists=/etc/quadlets/keycloak/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=keycloak.target
+
+[Container]
+ContainerName=keycloak
+Image=localhost/keycloak:latest
+AutoUpdate=local
+
+# Network configuration
+Network=host
+
+# Keycloak specific commands
+Exec=start --optimized
+
+# Health check
+HealthCmd=curl -sSf http://127.0.0.1:8080/health
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
+# Configuration file
+EnvironmentFile=/etc/quadlets/keycloak/config.env
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=keycloak.target
