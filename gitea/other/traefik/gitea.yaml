@@ -1,0 +1,16 @@
+http:
+  routers:
+    gitea:
+      rule: "Host(`gitea`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "gitea"
+      #tls:
+      #  certResolver: le
+  services:
+    gitea:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:3000"

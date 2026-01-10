@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: gitea
+    uid: 10009
+    gecos: Gitea
+    home_dir: /var/lib/quadlets/gitea
+    primary_group: itix-svc

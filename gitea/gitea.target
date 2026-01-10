@@ -1,0 +1,13 @@
+[Unit]
+Description=Gitea Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target gitea.service
+After=postgresql.target gitea.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Gitea has been configured
+ConditionPathExists=/etc/quadlets/gitea/config.env
+
+[Install]
+WantedBy=multi-user.target

@@ -115,9 +115,9 @@ DEPENDENCIES_IGNITION_FILES := $(shell for dep in base $(DEPENDENCIES); do echo 
 PROJECT_UID ?= 0
 PROJECT_GID ?= 0
 
-# Function to reverse a list of words
-# Usage: $(call reverse,word1 word2 word3)
-reverse = $(let first rest,$1,$(if $(rest),$(call reverse,$(rest)) )$(first))
+# Source Makefiles providing hooks to extend this Makefile.
+HOOKS := $(wildcard $(TOP_LEVEL_DIR)/*/Makefile.hooks)
+include $(HOOKS)
 
 # Ensure that the Makefile is not run from the top-level directory and that it is run as root.
 pre-requisites::
