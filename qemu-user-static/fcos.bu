@@ -1,9 +1,0 @@
-variant: fcos
-version: 1.4.0
-ignition:
-  config:
-    merge:
-    - local: base.ign
-    - local: qemu-user-static.ign
-    - local: qemu-user-static-examples.ign
-    - local: local.ign

@@ -50,6 +50,9 @@ endif
 ifeq ($(BUTANE_BLOCKLIST),)
 export BUTANE_BLOCKLIST := $(shell tmp=$$(mktemp /tmp/butane-blocklist-XXXXXX); cp $(TOP_LEVEL_DIR)/butane.blocklist "$$tmp"; echo "$$tmp")
 endif
+ifeq ($(BUTANE_START_TS),)
+export BUTANE_START_TS := $(shell mktemp /tmp/butane-start-ts-XXXXXX)
+endif
 endif
 
 # Name of the current project, derived from the current working directory.
@@ -109,7 +112,7 @@ I_KNOW_WHAT_I_AM_DOING ?=
 
 # List of all ignition files corresponding to the dependencies
 # Here, we inject the "base" project as a dependency. It can therefore be assumed to always be embeddable in project's butane specs.
-DEPENDENCIES_IGNITION_FILES := $(shell for dep in base $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign $(TOP_LEVEL_DIR)/$$dep/$$dep-examples.ign; done)
+DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(TOP_LEVEL_DIR)/$$dep/$$dep.ign $(TOP_LEVEL_DIR)/$$dep/$$dep-examples.ign; done)
 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
@@ -142,7 +145,7 @@ dryrun:
 	QUADLET_UNIT_DIRS="$$PWD" /usr/lib/systemd/system-generators/podman-system-generator -dryrun > /dev/null
 
 # Create the base directories needed for installation.
-$(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d:
+$(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d $(TARGET_CHROOT)/etc/profile.d:
 	install -D -d -m 0755 -o root -g root $@
 
 # Create the directory to store quadlet configuration files.
@@ -319,42 +322,44 @@ tail-logs: pre-requisites
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
-# Ensure that required variables are set before building Butane specifications.
-butane-prerequisites:
+# Build the Butane specifications, suitable for Fedora CoreOS, including those of the dependencies of this project.
+$(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu &:
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi; \
 	if [ -z "$(BUTANE_BLOCKLIST)" ]; then \
 		echo "BUTANE_BLOCKLIST is not set!"; exit 1; \
+	fi; \
+	if [ -z "$(BUTANE_START_TS)" ]; then \
+		echo "BUTANE_START_TS is not set!"; exit 1; \
 	fi
-
-# Build the Butane specifications (configuration files) suitable for Fedora CoreOS.
-# In order to avoid duplications in the ignition files, a blocklist is updated, containing file paths as they are added to the chroot.
-$(PROJECT_NAME).bu: YQ_FILES := $(shell if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)
-$(PROJECT_NAME).bu: butane-prerequisites install-config
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $(YQ_FILES) > $(PROJECT_NAME).bu  
-	@(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"
-
-# Build the Butane specifications (example files) suitable for Fedora CoreOS.
-# In order to avoid duplications in the ignition files, a blocklist is updated, containing file paths as they are added to the chroot.
-$(PROJECT_NAME)-examples.bu: butane-prerequisites install-examples
-	$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > $(PROJECT_NAME)-examples.bu
-	@(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"
-
-# Build the Butane specifications + Ignition files suitable for Fedora CoreOS of the dependencies of this project.
-butane-pre:: butane-prerequisites
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
-	for dep in base $(DEPENDENCIES); do \
-		if [[ "$$dep" == "$(PROJECT_NAME)" ]]; then \
-			# Avoid building the current project as its own dependency. \
-			continue; \
-		fi ; \
-		run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep $$dep.ign $$dep-examples.ign ; \
-	done
+	if [ $(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ $(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
+		for dep in base $(DEPENDENCIES); do \
+			if [[ "$$dep" == "$(PROJECT_NAME)" ]]; then \
+				# Avoid building the current project as its own dependency. \
+				continue; \
+			fi ; \
+			if [ $(BUTANE_START_TS) -ot "$(TOP_LEVEL_DIR)/$$dep/$$dep.ign" ] && [ $(BUTANE_START_TS) -ot "$(TOP_LEVEL_DIR)/$$dep/$$dep-examples.ign" ]; then \
+				# Dependency is up-to-date. \
+				continue; \
+			fi ; \
+			run $(MAKE) -C $(TOP_LEVEL_DIR)/$$dep $$dep.ign $$dep-examples.ign ; \
+		done; \
+		run make install-config; \
+		YQ_FILES="$$(if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)"; \
+		echo "generate-butane-spec.sh $(TARGET_CHROOT) > $(PROJECT_NAME).bu"; \
+		$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$YQ_FILES > $(PROJECT_NAME).bu; \
+		(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
+		run make install-examples; \
+		echo "generate-butane-spec.sh $(TARGET_CHROOT) > $(PROJECT_NAME)-examples.bu"; \
+		$(TOP_LEVEL_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > $(PROJECT_NAME)-examples.bu; \
+		(cat $(TOP_LEVEL_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
+	fi
+.PHONY: $(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu
 
 # Generate the current project's Ignition files from the Butane specs.
-$(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: butane-pre
 $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: %.ign: %.bu
 	butane --strict -o $@ $<
 
@@ -365,11 +370,9 @@ butane: fcos.ign
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
-# Build the ignition files of the dependencies of this project.
-$(DEPENDENCIES_IGNITION_FILES):
-	$(MAKE) -C $(dir $@) $(notdir $@)
-# The file might exist already, declare it as phony and let the child Makefile handle it.
-.PHONY: $(DEPENDENCIES_IGNITION_FILES)
+.INTERMEDIATE: fcos.bu
+fcos.bu: %.bu: Makefile $(TOP_LEVEL_DIR)/default-butane-spec.sh
+	$(TOP_LEVEL_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPENDENCIES) > $@
 
 # Generate the final Fedora CoreOS ignition file by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
 fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_FILES)
@@ -487,4 +490,4 @@ clean: clean-pre pre-requisites
 .PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre remove-vm
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 .PHONY: install-files install-files-pre install-files-post install-actions
-.PHONY: install-actions-pre install-actions-post butane-prerequisites butane-pre
+.PHONY: install-actions-pre install-actions-post

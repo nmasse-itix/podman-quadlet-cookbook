@@ -8,25 +8,13 @@ DEPENDENCIES = postgresql traefik
 PROJECT_UID = 10008
 PROJECT_GID = 10000
 
+TOP_LEVEL_DIR := ..
+include $(TOP_LEVEL_DIR)/common.mk
+
 # Additional Nextcloud directories and files
-TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis
-$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/redis:
-	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
-
-TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data
-TARGET_FILES += $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config
-$(TARGET_CHROOT)/var/lib/quadlets/nextcloud/data $(TARGET_CHROOT)/var/lib/quadlets/nextcloud/config:
-	install -m 0700 -o $(PROJECT_UID) -g $(PROJECT_GID) -d $@
-
-$(TARGET_CHROOT)/etc/quadlets/nextcloud/www.conf: config/www.conf
-	install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) -D $< $@
-
 TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
 $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
 	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
-
-TOP_LEVEL_DIR := ..
-include $(TOP_LEVEL_DIR)/common.mk
 
 .PHONY: test test-set-nextcloud-major
 
