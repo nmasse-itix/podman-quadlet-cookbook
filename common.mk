@@ -371,8 +371,9 @@ $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
 .INTERMEDIATE: fcos.bu
+fcos.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
 fcos.bu: %.bu: Makefile $(TOP_LEVEL_DIR)/default-butane-spec.sh
-	$(TOP_LEVEL_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPENDENCIES) > $@
+	$(TOP_LEVEL_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPS) > $@
 
 # Generate the final Fedora CoreOS ignition file by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
 fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_FILES)
