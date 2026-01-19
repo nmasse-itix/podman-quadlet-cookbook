@@ -133,7 +133,7 @@ pre-requisites::
 		exit 1; \
 	fi
 	@set -Eeuo pipefail; \
-	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq; do \
+	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq podlet; do \
 		if ! which $$tool &>/dev/null ; then \
 			echo "$$tool is not installed. Please install it first." >&2; \
 			exit 1; \
