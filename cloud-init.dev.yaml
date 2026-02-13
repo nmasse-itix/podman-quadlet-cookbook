@@ -1,0 +1,39 @@
+#cloud-config
+
+users:
+- name: root
+  ssh_authorized_keys:
+  - ssh-ed25519 REDACTED user@host
+
+chpasswd:
+  expire: false
+  users:
+  - name: root
+    password: root
+    type: text
+
+packages:
+- '@virtualization' # Nested virtualization is required to run the tests of the Podman Quadlet Cookbook
+- butane
+- coreos-installer
+- curl
+- git
+- git-lfs
+- make
+- net-tools
+- nodejs-npm # Required to install Claude Code
+- podlet # Tooling for Podman Quadlets development
+- podman
+- procps-ng
+- qemu-img
+- systemd
+- virt-install
+- xterm-resize # Required to fix the terminal when using `virsh console` with UEFI firmware
+- yq
+
+write_files:
+- path: /etc/ssh/sshd_config.d/00-vscode.conf
+  content: |
+    # This file is used to allow VS Code Remote SSH extension to connect to the VM as root user.
+    PermitRootLogin prohibit-password
+  permissions: '0600'

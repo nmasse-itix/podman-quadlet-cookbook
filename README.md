@@ -57,19 +57,32 @@ This repository gathers all the recipes (hence the name "Cookbook") to deploy Op
 
 To develop Podman Quadlets, it is advised to create a Fedora Virtual Machine dedicated to this task.
 
-You can create a Fedora Virtual Machine with the following commands:
+You can create a Fedora Virtual Machine with the following command:
 
 ```sh
-TODO
+sudo ./create-dev-vm.sh
 ```
 
-Dependencies to install in the VM:
+Then, retrieve the IP address of your VM with the following command:
 
 ```sh
-dnf install -y make systemd procps-ng @virtualization qemu-img virt-install coreos-installer xterm-resize butane yq podlet
+sudo virsh domifaddr quadlets
 ```
 
+Then, on your host, add the following configuration to your `~/.ssh/config` file:
 
+```
+Host quadlets
+        HostName <IP_ADDRESS_OF_YOUR_VM>
+        User root
+        ForwardAgent yes
+        StrictHostKeyChecking=no
+        UserKnownHostsFile=/dev/null
+```
+
+Finally, install the [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh&ssr=false#overview) extension for Visual Studio Code, and connect to your VM using the "Remote - SSH: Connect to Host..." command.
+
+If needed, you can also connect to your VM using `ssh root@quadlets` from your terminal or from the libvirt console using `sudo virsh console quadlets` with the login `root` and the password `root`.
 
 ## License
 
