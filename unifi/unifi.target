@@ -1,0 +1,13 @@
+[Unit]
+Description=Unifi Network Application Service Target
+Documentation=man:systemd.target(5)
+Requires=unifi-mongo.service unifi-app.service
+After=unifi-mongo.service unifi-app.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Unifi has been configured
+ConditionPathExists=/etc/quadlets/unifi/config.env
+
+[Install]
+WantedBy=multi-user.target

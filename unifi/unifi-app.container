@@ -1,0 +1,52 @@
+[Unit]
+Description=Unifi Network Application
+Documentation=https://docs.linuxserver.io/images/docker-unifi-network-application/
+After=network.target unifi-mongo.service
+Requires=unifi-mongo.service
+
+# Only start if Unifi has been configured
+ConditionPathExists=/etc/quadlets/unifi/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=unifi.target
+
+[Container]
+ContainerName=unifi-app
+Image=lscr.io/linuxserver/unifi-network-application:latest
+AutoUpdate=registry
+
+# Network configuration
+Network=host
+
+# The LinuxServer Unifi image runs as root and then drops privileges to the PUID/PGID specified by environment variables.
+Environment=PUID=10011 PGID=10000
+
+# Environment variables for MongoDB initialization
+Environment=TZ=Etc/UTC
+EnvironmentFile=/etc/quadlets/unifi/config.env
+
+# Volume mounts
+Volume=/var/lib/quadlets/unifi/app:/config:Z
+Volume=/var/lib/virtiofs/data/unifi:/config/data/backup:z
+
+# Health check
+HealthCmd=curl -kfs https://localhost:8443 || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=60s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/unifi/config.env
+
+# Wait for MongoDB to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/27017; then echo "Waiting for MongoDB to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=unifi.target

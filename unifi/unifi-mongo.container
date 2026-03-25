@@ -1,0 +1,52 @@
+[Unit]
+Description=MongoDB for Unifi Network Application
+Documentation=https://hub.docker.com/_/mongo/
+After=network.target
+
+# Only start if Unifi has been configured
+ConditionPathExists=/etc/quadlets/unifi/config.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=unifi.target
+
+[Container]
+ContainerName=unifi-mongo
+Image=docker.io/library/mongo:${MONGO_MAJOR}
+AutoUpdate=registry
+
+# Network configuration
+Network=host
+
+# No need for root privileges
+User=10011
+Group=10000
+
+# Environment variables for MongoDB initialization
+Environment=MONGO_INITDB_ROOT_USERNAME MONGO_INITDB_ROOT_PASSWORD MONGO_DBNAME MONGO_USER MONGO_PASS MONGO_AUTHSOURCE
+
+# Bind MongoDB to localhost to prevent it from being accessible from the network, since the Unifi app will connect to it via localhost
+Exec=--bind_ip 127.0.0.1
+
+# Volume mounts for data persistence
+Volume=/var/lib/quadlets/unifi/mongo/db:/data/db:Z
+Volume=/var/lib/quadlets/unifi/mongo/configdb:/data/configdb:Z
+Volume=/etc/quadlets/unifi/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro,z
+
+# Health check
+HealthCmd=mongosh --quiet --eval "db.runCommand({ping: 1})" || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/unifi/config.env
+
+[Install]
+WantedBy=unifi.target

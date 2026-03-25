@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: unifi
+    uid: 10011
+    gecos: Unifi Network Application
+    home_dir: /var/lib/quadlets/unifi
+    primary_group: itix-svc
