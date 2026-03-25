@@ -21,4 +21,4 @@ addopts = "-v"
 
 [tool.setuptools]                                                                                               
 # This repo is not a Python package — suppress automatic package discovery.                              
-packages = []                                                                                            
+packages = []
