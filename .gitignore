@@ -3,3 +3,5 @@
 !fcos.bu
 !overlay.bu
 */butane.blocklist
+__pycache__/
+.pytest_cache/

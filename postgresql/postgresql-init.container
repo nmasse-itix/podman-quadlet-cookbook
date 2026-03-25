@@ -15,7 +15,7 @@ PartOf=postgresql.target
 
 [Container]
 ContainerName=postgresql-init-job
-Image=docker.io/library/postgres:${PG_MAJOR}-alpine
+Image=postgresql.image
 
 # Network configuration
 Network=host

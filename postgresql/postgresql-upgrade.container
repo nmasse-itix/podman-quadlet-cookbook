@@ -17,7 +17,7 @@ PartOf=postgresql.target
 
 [Container]
 ContainerName=postgresql-upgrade-to-${PG_MAJOR}-job
-Image=docker.io/pgautoupgrade/pgautoupgrade:${PG_MAJOR}-alpine
+Image=postgresql-pgautoupgrade.image
 
 # Network configuration
 Network=host

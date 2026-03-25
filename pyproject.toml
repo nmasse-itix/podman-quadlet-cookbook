@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "podman-quadlet-cookbook-tests"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "pytest>=8.0",
+    "pytest-testinfra>=10.1",
+    "paramiko>=3.4",
+]
+
+[tool.pytest.ini_options]
+# No testpaths set: pytest discovers tests in all */tests/ directories.
+# Run a specific cookbook: pytest postgresql/tests/
+log_cli = true
+log_cli_level = "INFO"
+addopts = "-v"
+
+[tool.setuptools]                                                                                               
+# This repo is not a Python package — suppress automatic package discovery.                              
+packages = []                                                                                            

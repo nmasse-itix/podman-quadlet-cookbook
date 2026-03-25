@@ -60,12 +60,13 @@ endif
 PROJECT_NAME := $(shell basename "$${PWD}")
 
 # Quadlets files and their corresponding systemd unit names
-QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build)
+QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build *.image)
 QUADLET_UNIT_NAMES := $(patsubst %.container, %.service, $(wildcard *.container)) \
 					 $(patsubst %.volume, %-volume.service, $(wildcard *.volume)) \
 					 $(patsubst %.network, %-network.service, $(wildcard *.network)) \
 					 $(patsubst %.pod, %-pod.service, $(wildcard *.pod)) \
-					 $(patsubst %.build, %-build.service, $(wildcard *.build))
+					 $(patsubst %.build, %-build.service, $(wildcard *.build)) \
+					 $(patsubst %.image, %-image.service, $(wildcard *.image))
 
 # Wellknown systemd unit file types
 SYSTEMD_FILES = $(wildcard *.service *.target *.timer *.mount)
@@ -133,7 +134,7 @@ pre-requisites::
 		exit 1; \
 	fi
 	@set -Eeuo pipefail; \
-	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq podlet; do \
+	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq podlet pip3; do \
 		if ! which $$tool &>/dev/null ; then \
 			echo "$$tool is not installed. Please install it first." >&2; \
 			exit 1; \

@@ -53,6 +53,13 @@ This repository gathers all the recipes (hence the name "Cookbook") to deploy Op
 - Fedora / CentOS Stream / RHEL or derivative operating system.
 - Systemd
 
+## End-to-end testing
+
+```
+pip install -e .
+pytest postgresql/tests/
+```
+
 ## Development
 
 To develop Podman Quadlets, it is advised to create a Fedora Virtual Machine dedicated to this task.

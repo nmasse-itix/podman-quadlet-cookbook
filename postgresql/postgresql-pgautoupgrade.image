@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/pgautoupgrade/pgautoupgrade
+Documentation=https://hub.docker.com/_/postgres/
+
+# Only start if PostgreSQL has been configured
+ConditionPathExists=/etc/quadlets/postgresql/config.env
+
+[Image]
+Image=docker.io/pgautoupgrade/pgautoupgrade:${PG_MAJOR}-alpine
+
+[Service]
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/postgresql/config.env
