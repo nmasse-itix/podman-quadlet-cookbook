@@ -53,7 +53,7 @@ Volume=/etc/quadlets/postgresql/init.d:/docker-entrypoint-initdb.d:z,ro
 
 [Service]
 Restart=no
-TimeoutStartSec=30
+TimeoutStartSec=60
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/postgresql/config.env

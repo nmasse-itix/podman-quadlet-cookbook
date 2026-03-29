@@ -88,7 +88,9 @@ def test_data_dir_exists(pg_host):
     f = pg_host.file("/var/lib/quadlets/postgresql")
     assert f.is_directory
     assert f.user == "postgresql"
-
+    assert f.user.uid == 10004
+    assert f.group == "itix-svc"
+    assert f.group.uid == 10000
 
 def test_latest_symlink_exists(pg_host):
     """The 'latest' symlink must point to the active major-version directory."""
