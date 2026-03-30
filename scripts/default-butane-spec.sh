@@ -11,6 +11,5 @@ ignition:
 EOF
 for dep in "$@"; do
     echo "    - local: ${dep}.ign"
-    echo "    - local: ${dep}-examples.ign"
 done
 echo "    - local: local.ign"

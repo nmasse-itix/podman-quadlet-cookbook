@@ -3,12 +3,13 @@ Description=Install fastfetch
 Wants=network-online.target
 After=network-online.target
 ConditionPathExists=!/usr/local/bin/fastfetch
+ConditionPathExists=/etc/quadlets/base/fastfetch.env
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/etc/quadlets/base/install-fastfetch.sh
-EnvironmentFile=-/etc/quadlets/base/fastfetch.env
+EnvironmentFile=/etc/quadlets/base/fastfetch.env
 
 [Install]
 WantedBy=multi-user.target

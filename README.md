@@ -35,7 +35,7 @@ This repository gathers all the recipes (hence the name "Cookbook") to deploy Op
 
 - `Makefile`: Cookbook's Makefile. Includes `../common.mk`. (**REQUIRED**)
 - `overlay.bu`: Fedora CoreOS Butane Specifications to include in the generated Ignition files. (_OPTIONAL_)
-- `fcos.bu`: The Fedora CoreOS Butane Specifications to build the test FCOS Virtual Machine. (_OPTIONAL_)
+- `fcos.bu`: The Fedora CoreOS Butane Specifications to build the dev & test FCOS Virtual Machine. (_OPTIONAL_)
 - `config/*`: Cookbook's configuration files (read-only). Goes into `/etc/quadlets/$(PROJECT_NAME)`.
 - `config/examples/*`: Cookbook configuration files (sample configuration, to be overwritten for each deployment). Goes into `/etc/quadlets/$(PROJECT_NAME)`.
 - `config/examples/*.env`: Systemd environment files, potentially containing secrets (to be overwritten for each deployment). Goes into `/etc/quadlets/$(PROJECT_NAME)`.

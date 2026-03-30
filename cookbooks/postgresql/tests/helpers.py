@@ -1,15 +1,7 @@
 import sys
 import pytest
 import testinfra
-
-from pathlib import Path
-THIS_COOKBOOK_DIR = Path(__file__).parent.parent
-COOKBOOKS_DIR = THIS_COOKBOOK_DIR.parent
-TOP_LEVEL_DIR = COOKBOOKS_DIR.parent
-THIS_COOKBOOK_NAME = THIS_COOKBOOK_DIR.name
-
-sys.path.insert(0, str(TOP_LEVEL_DIR / "tests"))
-import test_quadlet  # noqa: E402
+import test_quadlet  # noqa: F401
 
 """
 Verify that the postgresql Quadlet is correctly installed and configured on a fresh VM boot.

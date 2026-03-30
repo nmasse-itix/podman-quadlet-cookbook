@@ -18,6 +18,7 @@ dependencies = [
 log_cli = true
 log_cli_level = "INFO"
 addopts = "-v"
+pythonpath = ["tests"]
 
 [tool.setuptools]                                                                                               
 # This repo is not a Python package — suppress automatic package discovery.                              

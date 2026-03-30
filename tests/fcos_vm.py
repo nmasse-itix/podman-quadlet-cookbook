@@ -15,7 +15,6 @@ Typical usage:
     vm.destroy()
 """
 
-import base64
 import re
 import shutil
 import subprocess
@@ -32,8 +31,8 @@ FCOS_BASE_IMAGE = LIBVIRT_IMAGES_DIR / "library" / "fedora-coreos.qcow2"
 BUTANE_VERSION = "1.4.0"
 
 def ensure_fcos_ign(cookbook_dir: Path) -> Path:
-    """Return the path to fcos.ign, building it via ``make butane`` if absent."""
-    fcos_ign = cookbook_dir / "fcos.ign"
+    """Return the path to fcos-test.ign, building it via ``make butane`` if absent."""
+    fcos_ign = cookbook_dir / "fcos-test.ign"
     if not fcos_ign.exists():
         subprocess.run(
             ["make", "-C", str(cookbook_dir), "butane"],
@@ -51,15 +50,15 @@ class FCOSIgnition:
     teardown).
     """
 
-    def __init__(self, ignition_files: list[Path], ssh_key: str | None = None, extra_files: dict[str, tuple[str | int, str | int, int, str]] | None = None) -> None:
+    def __init__(self, ignition_files: list[Path] | None = None, ssh_key: str | None = None, extra_files: dict[str, tuple[str | int, str | int, int, str]] | None = None) -> None:
         """
         Args:
             ignition_files: List of paths to the compiled Ignition (.ign) files.
             ssh_key: Optional SSH key to inject into the Ignition.
             extra_files: Optional dictionary of extra files to inject into the Ignition.
         """
-        self.ignition_files = [Path(f) for f in ignition_files]
-        self.extra_files = extra_files or {}
+        self.ignition_files = ignition_files or list()
+        self.extra_files = extra_files or dict()
         self.ssh_key = ssh_key
 
     def _build_extra_files_butane(self) -> str | None:
@@ -191,19 +190,22 @@ class FCOSVirtualMachine:
     teardown).
     """
 
-    def __init__(self, cookbook_name: str, instance_name: str, keep: bool = False, ignition: FCOSIgnition = FCOSIgnition([]), virtiofs_dirs: list[tuple[Path, str]] = [], vm_config: tuple[int, int, int, int] = (4096, 2, 50, 100)) -> None:
+    def __init__(self, cookbook_name: str, instance_name: str, keep: bool = False, ignition: FCOSIgnition | None = None, virtiofs_dirs: list[tuple[Path, str]] = [], vm_config: tuple[int, int, int, int] = (4096, 2, 50, 100)) -> None:
         """
         Args:
             cookbook_name: Short identifier appended to "fcos-test-" to form the
                   libvirt domain name.  Keep it unique across parallel tests.
+            instance_name: Short identifier appended to the domain name to allow multiple VM for the same cookbook.
+            keep: If True, the VM and its associated resources will not be automatically destroyed on teardown.  Useful for debugging.
             ignition: FCOSIgnition instance to build the Ignition (.ign) file.
             virtiofs_dirs: List of host directories and virtiofs target directories that will be exposed inside the VM.
+            vm_config: Tuple containing VM configuration (memory in MB, vCPUs, root disk size in GB, /var disk size in GB).
         """
         if keep:
             self.vm_name = f"fcos-test-{cookbook_name}-{instance_name}-dev"
         else:
             self.vm_name = f"fcos-test-{cookbook_name}-{instance_name}-{os.getpid()}"
-        self.ignition = ignition
+        self.ignition = ignition or FCOSIgnition()
         self.virtiofs_dirs = virtiofs_dirs
         self.vm_config = vm_config
         self._images_dir = LIBVIRT_IMAGES_DIR / self.vm_name
@@ -287,9 +289,6 @@ class FCOSVirtualMachine:
         )
         if self._images_dir.exists():
             shutil.rmtree(self._images_dir)
-        for host_dir, _ in self.virtiofs_dirs:
-            if Path(host_dir).exists():
-                shutil.rmtree(host_dir)
 
     # ------------------------------------------------------------------
     # Readiness polling

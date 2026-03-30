@@ -118,7 +118,10 @@ I_KNOW_WHAT_I_AM_DOING ?=
 
 # List of all ignition files corresponding to the dependencies
 # Here, we inject the "base" project as a dependency. It can therefore be assumed to always be embeddable in project's butane specs.
-DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/$$dep.ign $(COOKBOOKS_DIR)/$$dep/$$dep-examples.ign; done)
+DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/$$dep.ign; done)
+
+# Variation of the previous variable with the built-in examples.
+DEPENDENCIES_IGNITION_EXAMPLES_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/$$dep.ign $(COOKBOOKS_DIR)/$$dep/$$dep-examples.ign; done)
 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
@@ -366,24 +369,30 @@ $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: %.ign: %.bu
 	butane --strict -o $@ $<
 
 # Build the Butane specifications + Ignition files suitable for Fedora CoreOS, including those of the dependencies of this project.
-butane: fcos.ign
+butane: fcos-dev.ign fcos-test.ign
 
 # Generate the local Butane spec + Ignition file (the one containing local customizations).
 $(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
 	butane --strict -o $@ $<
 
-.INTERMEDIATE: fcos.bu
-fcos.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
-fcos.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh
+.INTERMEDIATE: fcos-dev.bu fcos-test.bu
+# Generate the Butane specs for development and testing by merging the current project's spec with those of the dependencies.
+# The development spec also includes the examples of the dependencies.
+# Whereas the testing spec only includes the main specs of the dependencies.
+fcos-dev.bu fcos-test.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
+fcos-dev.bu: DEPS := $(DEPS) $(addsuffix -examples,$(DEPS))
+fcos-dev.bu fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh
 	$(SCRIPTS_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPS) > $@
 
-# Generate the final Fedora CoreOS ignition file by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
-fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_FILES)
+# Generate the final Fedora CoreOS ignition files (dev & test) by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
+fcos-dev.ign: $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
+fcos-test.ign: $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
+fcos-dev.ign fcos-test.ign: fcos-%.ign: fcos-%.bu
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
 	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
 	run cp $(filter %.ign,$^) $$tmp; \
-	run butane --strict -d $$tmp -o $@ fcos.bu; \
+	run butane --strict -d $$tmp -o $@ $<; \
 	run rm -rf $$tmp
 
 # Fetch the latest version of the Fedora CoreOS QCOW2 image.
@@ -399,7 +408,7 @@ fcos.ign: fcos.bu $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)
 	run mv "$$qcow2" $@
 
 # Copy the ignition file.
-/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: fcos.ign
+/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: fcos-dev.ign
 	install -D -o root -g root -m 0644 $< $@
 
 # Copy the Fedora CoreOS base image to create a new QCOW2 image for the VM.
