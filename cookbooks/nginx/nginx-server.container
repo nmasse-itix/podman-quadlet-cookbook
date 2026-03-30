@@ -24,7 +24,7 @@ Network=host
 EnvironmentFile=/etc/quadlets/nginx/config.env
 
 # Volume mounts
-Volume=/var/lib/quadlets/nginx/nginx/website:/usr/share/nginx/html:z
+Volume=/var/lib/quadlets/nginx/cookbooks/nginx/website:/usr/share/nginx/html:z
 
 # Health check
 HealthCmd=curl -sSf -o /dev/null http://localhost/
