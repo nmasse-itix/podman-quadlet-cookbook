@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/library/mongo
+Documentation=https://hub.docker.com/_/mongo/
+
+# Only start if Unifi has been configured
+ConditionPathExists=/etc/quadlets/unifi/config.env
+
+[Image]
+Image=docker.io/library/mongo:${MONGO_MAJOR}
+
+[Service]
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/unifi/config.env

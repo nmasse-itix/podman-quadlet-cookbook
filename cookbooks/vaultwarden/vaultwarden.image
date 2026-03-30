@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull quay.io/vaultwarden/server
+Documentation=https://github.com/dani-garcia/vaultwarden
+
+[Image]
+Image=quay.io/vaultwarden/server:latest-alpine

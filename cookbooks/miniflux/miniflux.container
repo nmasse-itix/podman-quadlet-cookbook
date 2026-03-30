@@ -11,7 +11,7 @@ PartOf=miniflux.target
 
 [Container]
 ContainerName=miniflux
-Image=ghcr.io/miniflux/miniflux:latest
+Image=miniflux.image
 AutoUpdate=registry
 
 # Network configuration

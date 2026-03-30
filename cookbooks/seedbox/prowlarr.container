@@ -10,7 +10,7 @@ ConditionPathIsMountPoint=/var/lib/virtiofs/data
 ContainerName=prowlarr
 
 # Image
-Image=lscr.io/linuxserver/prowlarr:latest
+Image=prowlarr.image
 AutoUpdate=registry
 
 # Security

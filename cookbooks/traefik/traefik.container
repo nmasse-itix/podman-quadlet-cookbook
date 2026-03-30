@@ -11,7 +11,7 @@ PartOf=traefik.target
 ContainerName=traefik
 
 # Image
-Image=docker.io/library/traefik:v3.4
+Image=traefik.image
 AutoUpdate=registry
 
 # No need for root privileges

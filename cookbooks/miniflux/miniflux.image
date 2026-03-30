@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull ghcr.io/miniflux/miniflux
+Documentation=https://github.com/miniflux/v2
+
+[Image]
+Image=ghcr.io/miniflux/miniflux:latest

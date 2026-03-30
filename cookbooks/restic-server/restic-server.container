@@ -8,7 +8,7 @@ RequiresMountsFor=/var/lib/virtiofs/data /var
 ContainerName=restic
 
 # Image
-Image=docker.io/restic/rest-server:latest
+Image=restic-server.image
 AutoUpdate=registry
 
 # Security

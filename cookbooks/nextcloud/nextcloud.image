@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/library/nextcloud
+Documentation=https://hub.docker.com/_/nextcloud/
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+[Image]
+Image=docker.io/library/nextcloud:${NEXTCLOUD_MAJOR}-fpm-alpine
+
+[Service]
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nextcloud/config.env

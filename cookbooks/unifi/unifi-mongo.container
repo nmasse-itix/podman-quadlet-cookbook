@@ -11,7 +11,7 @@ PartOf=unifi.target
 
 [Container]
 ContainerName=unifi-mongo
-Image=docker.io/library/mongo:${MONGO_MAJOR}
+Image=unifi-mongo.image
 AutoUpdate=registry
 
 # Network configuration

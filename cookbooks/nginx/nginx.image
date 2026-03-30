@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.io/library/nginx
+Documentation=https://hub.docker.com/_/nginx
+
+[Image]
+Image=docker.io/library/nginx:mainline-alpine

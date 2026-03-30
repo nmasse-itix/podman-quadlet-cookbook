@@ -16,7 +16,7 @@ User=10023
 Group=10000
 
 # Image
-Image=docker.io/goacme/lego:latest
+Image=lego.image
 AutoUpdate=registry
 
 # Network configuration

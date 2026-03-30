@@ -1,0 +1,5 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/qbittorrent
+
+[Image]
+Image=lscr.io/linuxserver/qbittorrent:latest

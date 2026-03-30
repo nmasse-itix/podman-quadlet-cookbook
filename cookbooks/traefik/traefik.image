@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.io/library/traefik
+Documentation=https://github.com/traefik/traefik-library-image
+
+[Image]
+Image=docker.io/library/traefik:v3.4

@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/library/redis
+Documentation=https://hub.docker.com/_/redis/
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+[Image]
+Image=docker.io/library/redis:${REDIS_MAJOR}-alpine
+
+[Service]
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nextcloud/config.env

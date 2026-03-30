@@ -9,7 +9,7 @@ ConditionPathIsMountPoint=/var/lib/virtiofs/data
 ContainerName=qbittorrent
 
 # Image
-Image=lscr.io/linuxserver/qbittorrent:latest
+Image=qbittorrent.image
 AutoUpdate=registry
 
 # Security

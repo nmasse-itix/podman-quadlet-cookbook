@@ -10,7 +10,7 @@ ConditionPathIsMountPoint=/var/lib/virtiofs/data
 ContainerName=radarr
 
 # Image
-Image=lscr.io/linuxserver/radarr:latest
+Image=radarr.image
 AutoUpdate=registry
 
 # Security

@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/jellyfin
+Documentation=https://docs.linuxserver.io/images/docker-jellyfin/
+
+[Image]
+Image=lscr.io/linuxserver/jellyfin:latest

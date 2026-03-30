@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/prowlarr
+Documentation=https://docs.linuxserver.io/images/docker-prowlarr/
+
+[Image]
+Image=lscr.io/linuxserver/prowlarr:latest

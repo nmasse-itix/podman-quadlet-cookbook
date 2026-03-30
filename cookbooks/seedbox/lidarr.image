@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/lidarr
+Documentation=https://docs.linuxserver.io/images/docker-lidarr/
+
+[Image]
+Image=lscr.io/linuxserver/lidarr:latest

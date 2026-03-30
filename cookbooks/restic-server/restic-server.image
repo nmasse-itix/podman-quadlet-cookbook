@@ -1,0 +1,5 @@
+[Unit]
+Description=podman pull docker.io/restic/rest-server
+
+[Image]
+Image=docker.io/restic/rest-server:latest

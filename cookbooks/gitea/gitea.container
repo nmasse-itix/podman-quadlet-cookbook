@@ -12,7 +12,7 @@ PartOf=gitea.target
 
 [Container]
 ContainerName=gitea
-Image=docker.gitea.com/gitea:latest
+Image=gitea.image
 AutoUpdate=registry
 
 # Network configuration

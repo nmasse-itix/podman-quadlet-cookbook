@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/nginxinc/nginx-unprivileged
+Documentation=https://hub.docker.com/r/nginxinc/nginx-unprivileged/
+
+# Only start if Nextcloud has been configured
+ConditionPathExists=/etc/quadlets/nextcloud/config.env
+
+[Image]
+Image=docker.io/nginxinc/nginx-unprivileged:${NGINX_MAJOR}-alpine
+
+[Service]
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/nextcloud/config.env

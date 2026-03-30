@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.io/collabora/code
+Documentation=https://hub.docker.com/r/collabora/code/
+
+[Image]
+Image=docker.io/collabora/code:latest

@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/radarr
+Documentation=https://docs.linuxserver.io/images/docker-radarr/
+
+[Image]
+Image=lscr.io/linuxserver/radarr:latest

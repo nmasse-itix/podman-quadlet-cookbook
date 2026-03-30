@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.io/goacme/lego
+Documentation=https://go-acme.github.io/lego/
+
+[Image]
+Image=docker.io/goacme/lego:latest

@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull ghcr.io/flaresolverr/flaresolverr
+Documentation=https://github.com/FlareSolverr/FlareSolverr/
+
+[Image]
+Image=ghcr.io/flaresolverr/flaresolverr:latest

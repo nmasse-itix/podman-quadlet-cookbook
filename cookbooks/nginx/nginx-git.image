@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.io/alpine/git
+Documentation=https://hub.docker.com/r/alpine/git
+
+[Image]
+Image=docker.io/alpine/git:latest

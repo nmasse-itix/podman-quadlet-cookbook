@@ -10,7 +10,7 @@ ConditionPathExists=/etc/quadlets/vmagent/vmagent.local.env
 ContainerName=vmagent
 
 # Image
-Image=quay.io/victoriametrics/vmagent:latest
+Image=vmagent.image
 AutoUpdate=registry
 
 # Security

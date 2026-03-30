@@ -11,7 +11,7 @@ PartOf=nextcloud.target
 
 [Container]
 ContainerName=nextcloud-collabora
-Image=docker.io/collabora/code:latest
+Image=nextcloud-collabora.image
 
 # No need for root privileges
 User=1001

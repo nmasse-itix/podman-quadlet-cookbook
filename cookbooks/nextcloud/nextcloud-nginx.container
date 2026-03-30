@@ -12,7 +12,7 @@ PartOf=nextcloud.target
 
 [Container]
 ContainerName=nextcloud-nginx
-Image=docker.io/nginxinc/nginx-unprivileged:${NGINX_MAJOR}-alpine
+Image=nextcloud-nginx.image
 
 # Network configuration
 Network=host

@@ -10,7 +10,7 @@ ConditionPathIsMountPoint=/var/lib/virtiofs/data
 ContainerName=jellyfin
 
 # Image
-Image=lscr.io/linuxserver/jellyfin:latest
+Image=jellyfin.image
 AutoUpdate=registry
 
 # Security

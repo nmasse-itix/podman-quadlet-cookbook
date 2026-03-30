@@ -12,7 +12,7 @@ PartOf=vaultwarden.target
 
 [Container]
 ContainerName=vaultwarden
-Image=quay.io/vaultwarden/server:latest-alpine
+Image=vaultwarden.image
 AutoUpdate=registry
 
 # No need for root privileges

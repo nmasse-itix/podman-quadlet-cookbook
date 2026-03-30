@@ -1,0 +1,5 @@
+[Unit]
+Description=podman pull quay.io/victoriametrics/vmagent
+
+[Image]
+Image=quay.io/victoriametrics/vmagent:latest

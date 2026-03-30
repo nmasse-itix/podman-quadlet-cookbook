@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull lscr.io/linuxserver/unifi-network-application
+Documentation=https://docs.linuxserver.io/images/docker-unifi-network-application/
+
+[Image]
+Image=lscr.io/linuxserver/unifi-network-application:latest

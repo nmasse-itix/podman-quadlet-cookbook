@@ -10,7 +10,7 @@ ConditionPathIsMountPoint=/var/lib/virtiofs/data
 ContainerName=sonarr
 
 # Image
-Image=lscr.io/linuxserver/sonarr:latest
+Image=sonarr.image
 AutoUpdate=registry
 
 # Security

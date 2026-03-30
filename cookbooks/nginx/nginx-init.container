@@ -14,7 +14,7 @@ PartOf=nginx.target
 
 [Container]
 ContainerName=nginx-init-job
-Image=docker.io/alpine/git:latest
+Image=nginx-git.image
 
 # Network configuration
 Network=host

@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull docker.gitea.com/gitea
+Documentation=https://docs.gitea.com/
+
+[Image]
+Image=docker.gitea.com/gitea:latest

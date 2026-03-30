@@ -12,7 +12,7 @@ PartOf=unifi.target
 
 [Container]
 ContainerName=unifi-app
-Image=lscr.io/linuxserver/unifi-network-application:latest
+Image=unifi-app.image
 AutoUpdate=registry
 
 # Network configuration

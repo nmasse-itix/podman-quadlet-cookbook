@@ -11,7 +11,7 @@ PartOf=nextcloud.target
 
 [Container]
 ContainerName=nextcloud-redis
-Image=docker.io/library/redis:${REDIS_MAJOR}-alpine
+Image=nextcloud-redis.image
 
 # Network configuration
 Network=host

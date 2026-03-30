@@ -15,7 +15,7 @@ PartOf=nextcloud.target
 
 [Container]
 ContainerName=nextcloud-init-job
-Image=docker.io/library/nextcloud:${NEXTCLOUD_MAJOR}-fpm-alpine
+Image=nextcloud.image
 
 # No need for root privileges
 User=www-data
