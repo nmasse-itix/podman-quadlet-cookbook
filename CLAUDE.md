@@ -6,8 +6,8 @@ You may be given Kustomize manifests, Helm charts, Docker Compose files, etc. th
 
 ## Rules
 
-- NEVER alter the files at the root of this GIT repository!
-- You are ONLY ALLOWED to edit files in the sub-directories.
+- NEVER alter the files outside the "cookbooks" directory!
+- You are ONLY ALLOWED to edit files in the sub-directories of the "cookbooks" directory.
 - Before writing or editing a Podman Quadlet, you MUST read the `podman-systemd.unit(5)` man page!
 
 ## Architecture

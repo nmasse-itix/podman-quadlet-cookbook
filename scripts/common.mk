@@ -25,6 +25,7 @@ help:
 	@echo "  clean-vm       - Clean up the Fedora CoreOS VM but keep its storage resources"
 	@echo "  remove-vm      - Remove all resources related to the Fedora CoreOS VM"
 	@echo "  console        - Connect to the Fedora CoreOS VM console"
+	@echo "  pytest         - Run integration tests on a clean Fedora CoreOS VM"
 	@echo
 	@echo "Useful commands:"
 	@echo
@@ -35,6 +36,7 @@ help:
 	@echo "  5. make butane                               # Build Butane specifications suitable for Fedora CoreOS"
 	@echo "  6. make fcos-vm console                      # Launch a fresh Fedora CoreOS VM (while retaining its persistent data) and connect to its console"
 	@echo "  7. make remove-vm                            # Remove all resources related to the Fedora CoreOS VM"
+	@echo "  8. make pytest                               # Run integration tests on a clean Fedora CoreOS VM"
 	@echo
 	@echo "All-in-one commands:"
 	@echo
@@ -327,6 +329,10 @@ tail-logs: pre-requisites
 	done; \
 	run journalctl "$${journalctl_args[@]}"
 
+pytest: pre-requisites
+	$(MAKE) butane
+	pytest tests/
+
 # Build the Butane specifications, suitable for Fedora CoreOS, including those of the dependencies of this project.
 $(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu &:
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
@@ -502,4 +508,4 @@ clean: clean-pre pre-requisites
 .PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre remove-vm
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 .PHONY: install-files install-files-pre install-files-post install-actions
-.PHONY: install-actions-pre install-actions-post
+.PHONY: install-actions-pre install-actions-post pytest
