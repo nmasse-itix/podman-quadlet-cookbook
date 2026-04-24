@@ -30,6 +30,25 @@ packages:
 - virt-install
 - xterm-resize # Required to fix the terminal when using `virsh console` with UEFI firmware
 - yq
+- NetworkManager
+- dnsmasq # Required to serve DNS records for the Peeble ACME server
+
+runcmd: |
+  #!/bin/bash
+  set -Eeuo pipefail
+
+  # Enable the Podman socket to allow running Podman containers from the testcontainers python library,
+  # which is used in the tests of the Podman Quadlet Cookbook.
+  systemctl enable --now --no-block podman.socket
+
+  # Disable systemd-resolved
+  systemctl stop --no-block systemd-resolved.service
+  systemctl disable systemd-resolved.service
+  systemctl mask systemd-resolved.service
+  
+  # Let NetworkManager handles the DNS name resolution.
+  rm -f /etc/resolv.conf
+  systemctl restart NetworkManager.service
 
 write_files:
 - path: /etc/ssh/sshd_config.d/00-vscode.conf
@@ -37,3 +56,12 @@ write_files:
     # This file is used to allow VS Code Remote SSH extension to connect to the VM as root user.
     PermitRootLogin prohibit-password
   permissions: '0600'
+- path: /etc/NetworkManager/conf.d/quadlets.conf
+  content: |
+    # This file is used to configure NetworkManager for the Quadlets environment.
+    # It configures NetworkManager to use dnsmasq as the system's DNS resolver and
+    # generates resolv.conf accordingly.
+    [main]
+    dns=dnsmasq
+    rc-manager=file
+  permissions: '0644'

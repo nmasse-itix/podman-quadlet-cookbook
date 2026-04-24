@@ -1,5 +1,5 @@
 [Unit]
-Description=PostgreSQL Service Target
+Description=Traefik Service Target
 Documentation=man:systemd.target(5)
 Requires=traefik.service
 After=traefik.service

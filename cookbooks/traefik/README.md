@@ -12,6 +12,31 @@ This cookbook:
 - Stores configuration in `/etc/quadlets/traefik/` and state in `/var/lib/quadlets/traefik/`.
 - Supports automatic container image updates via Podman auto-update.
 
+## Configuration
+
+The v3 version of Traefik expects the load its configuration from one (and only one) of the following sources:
+
+- A static configuration file (e.g. `traefik.yaml`) mounted into the `/etc/traefik` of the container.
+- `TRAEFIK_*` Environment variables.
+- Command-line arguments.
+
+If you want to use a static configuration file, you can place it in `/etc/quadlets/traefik/traefik.yaml` and it will be mounted into the container.
+Since it is the default location for Traefik's configuration, no additional configuration is needed.
+
+To use the environment variables, you can set them in the `override.conf` file for the container.
+That is to say, you can create the file `/etc/containers/systemd/traefik.container.d/override.conf` with the following content:
+
+```ini
+Environment=TRAEFIK_FOO=bar TRAEFIK_BAZ=qux ...
+```
+
+Regarding command-line arguments, you can create the file `/etc/containers/systemd/traefik.container.d/override.conf` with the following content:
+
+```ini
+EntryPoint=/usr/local/bin/traefik
+Exec=--foo=bar --baz=qux ...
+```
+
 ## Usage
 
 In a separate terminal, follow the logs.

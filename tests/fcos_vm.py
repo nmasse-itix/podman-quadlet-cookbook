@@ -50,7 +50,7 @@ class FCOSIgnition:
     teardown).
     """
 
-    def __init__(self, ignition_files: list[Path] | None = None, ssh_key: str | None = None, extra_files: dict[str, tuple[str | int, str | int, int, str]] | None = None) -> None:
+    def __init__(self, ignition_files: list[Path] | None = None, ssh_key: str | None = None, extra_files: dict[str, tuple[str, str | int, str | int, int]] | None = None) -> None:
         """
         Args:
             ignition_files: List of paths to the compiled Ignition (.ign) files.
@@ -313,6 +313,20 @@ class FCOSVirtualMachine:
         if self._ip is None:
             raise RuntimeError(f"VM {self.vm_name!r} has no IP address yet")
         return self._ip
+
+    def wait_ip(self, timeout: int = 300) -> str:
+        """Block until the VM has an IP address. Returns the IP address.
+
+        Polls every 5 seconds until ``timeout`` seconds have elapsed.
+        """
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            ip = self.get_ip()
+            if ip:
+                self._ip = ip
+                return ip
+            time.sleep(5)
+        raise TimeoutError(f"VM {self.vm_name!r} did not obtain an IP address within {timeout}s")
 
     def wait_ssh(self, ssh_key: Path, timeout: int = 300) -> str:
         """Block until SSH is reachable. Returns the IP address.

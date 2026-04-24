@@ -103,13 +103,19 @@ TARGET_EXAMPLES_TMPFILESD_FILES = $(patsubst tmpfiles.d/examples/%, $(TARGET_CHR
 TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(EXAMPLES_SYSCTLD_FILES))
 TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
 
+# Example quadlet and systemd drop-ins files
+EXAMPLES_QUADLET_DROPINS_FILES := $(shell find examples -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null)
+EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell find examples -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null)
+TARGET_EXAMPLES_QUADLET_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/containers/systemd/%, $(EXAMPLES_QUADLET_DROPINS_FILES))
+TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/systemd/system/%, $(EXAMPLES_SYSTEMD_DROPINS_FILES))
+
 # All configuration files to be installed
 TARGET_FILES += $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
 				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
 				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES) $(TARGET_PROFILED_FILES)
 
 # All example configuration files to be installed
-TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES)
+TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES) $(TARGET_EXAMPLES_QUADLET_DROPINS_FILES) $(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES)
 
 # Dependencies on other projects
 # List here the names of other projects (directories at the top-level) that this project depends on.
@@ -187,6 +193,12 @@ $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 $(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	install -m 0600 -o root -g root -D $< $@
 
+# Copy systemd and quadlet drop-ins files
+$(TARGET_EXAMPLES_QUADLET_DROPINS_FILES): $(TARGET_CHROOT)/etc/containers/systemd/%: examples/% $(TARGET_CHROOT)/etc/containers/systemd
+$(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES): $(TARGET_CHROOT)/etc/systemd/system/%: examples/% $(TARGET_CHROOT)/etc/systemd/system
+$(TARGET_EXAMPLES_QUADLET_DROPINS_FILES) $(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES):
+	install -D -m 0644 -o root -g root $< $@
+
 # Copy tmpfiles.d files
 $(TARGET_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/% $(TARGET_CHROOT)/etc/tmpfiles.d
 $(TARGET_EXAMPLES_TMPFILESD_FILES): $(TARGET_CHROOT)/etc/tmpfiles.d/%: tmpfiles.d/examples/% $(TARGET_CHROOT)/etc/tmpfiles.d
@@ -210,7 +222,7 @@ $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME):
 	install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@
 
 # Copy all configuration files provided by this project.
-install-config: $(TARGET_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME)
+install-config: $(TARGET_FILES) $(TARGET_CHROOT)/var/lib/quadlets/$(PROJECT_NAME) $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 
 # Copy all example configuration files provided by this project.
 install-examples: $(TARGET_EXAMPLE_FILES)

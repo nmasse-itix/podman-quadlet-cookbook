@@ -10,6 +10,8 @@ dependencies = [
     "pytest>=8.0",
     "pytest-testinfra>=10.1",
     "paramiko>=3.4",
+    "testcontainers>=4.0",
+    "pytest-rerunfailures>=16.0",
 ]
 
 [tool.pytest.ini_options]
