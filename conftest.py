@@ -53,10 +53,13 @@ def pebble_server_ip(libvirt_network_if: str) -> str:
     """IP Address of the Pebble ACME server."""
     return _get_libvirt_bridge_ip(libvirt_network_if)
 
-@pytest.fixture(scope="session")
-def top_level_domain() -> str:
+@pytest.fixture(scope="module")
+def top_level_domain(request, keep) -> str:
     """Top-level domain for the test environment."""
-    return "pytest.example.test"
+    module_name = request.module.__name__.split(".")[-1].replace("test_", "").replace("_", "-")
+    cookbook_dir = Path(request.path).parent.parent
+    instance = "dev" if keep else f"pid-{os.getpid()}"
+    return f"{instance}.{module_name}.{cookbook_dir.name}.pytest.example.test"
 
 @pytest.fixture(scope="session")
 def dns_server_ip(libvirt_network_if: str) -> str:
@@ -217,9 +220,9 @@ def pebble_acme_server(tmp_path_factory: pytest.TempPathFactory, pebble_server_i
 
         yield data # <-- tests run here with access to the Pebble ACME server
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def dns_server(libvirt_network: str, top_level_domain: str, keep: bool) -> DNSServer:
-    """Session-scoped DNS server manager for the libvirt network."""
+    """Module-scoped DNS server manager for the libvirt network."""
     srv = DNSServer(network=libvirt_network, persistent=keep)
     srv.set_domain(top_level_domain)
 
@@ -325,7 +328,7 @@ def dns_names() -> list[str]:
 @pytest.fixture(scope="module")
 def fcos_vm(
     request,                                    # Fixture that provides information about the requesting test function, class or module.
-    keep: bool,                              # Fixture passed from command line option --keep to determine whether to keep the VM after tests for debugging purposes.
+    keep: bool,                                 # Fixture passed from command line option --keep to determine whether to keep the VM after tests for debugging purposes.
     fcos_vm_config: tuple[int, int, int, int],  # Fixture that provides the VM configuration (memory in MB, vCPUs, root disk size in GB, /var disk size in GB).
     test_ssh_key: Path,                         # Fixture that provides the path to the SSH private key to connect to the VM.
     test_ssh_pubkey: str,                       # Fixture that provides the content of the SSH public key to inject into the VM for SSH access.

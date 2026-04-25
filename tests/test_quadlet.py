@@ -1,6 +1,7 @@
 import socket
 import json
 import time
+import pytest
 
 class TestQuadlet:
     """
@@ -94,6 +95,20 @@ class TestQuadlet:
     """
     If expected_main_service is set, the number of seconds to wait for it to become active before giving up and failing the tests.
     """
+
+    def test_clean_traefik_state(self, fcos_host, keep):
+        traefik_unit_file = fcos_host.file("/etc/systemd/system/traefik.target")
+        if keep and traefik_unit_file.exists:
+            # Clean-up the ACME storage of Traefik since it may be out-of-sync with Pebble,
+            # but only if --keep is set because otherwise the VM is not reused across runs
+            # and is already in a clean state.
+            result = fcos_host.run("systemctl stop traefik.target")
+            assert result.rc == 0, f"Failed to stop traefik.target: {result.stderr}"
+            fcos_host.run("rm -f /var/lib/quadlets/traefik/acme.json")
+            result = fcos_host.run("systemctl start traefik.target")
+            assert result.rc == 0, f"Failed to start traefik.target: {result.stderr}"
+        else:
+            pytest.skip("No need to clean Traefik state.")
 
     def test_wait_for_main_service(self, fcos_host):
         """Wait for the expected main service to become active before running any other tests."""

@@ -57,12 +57,14 @@ def fcos_extra_files(pebble_acme_server, top_level_domain) -> dict:
             10000,
             0o644,
         ),
+        # The Pebble CA certificate is needed for Traefik to trust the Pebble ACME server.
         "/etc/quadlets/traefik/pebble.pem": (
             pebble_acme_server['ca_cert'],
             10001,
             10000,
             0o644,
         ),
+        # The main Traefik configuration file.
         "/etc/quadlets/traefik/traefik.yaml": (
             textwrap.dedent(f"""\
                 api:
@@ -89,7 +91,7 @@ def fcos_extra_files(pebble_acme_server, top_level_domain) -> dict:
                 certificatesResolvers:
                   le:
                     acme:
-                      email: "traefik@pytest.example.test"
+                      email: "traefik@{top_level_domain}"
                       caServer: "{pebble_acme_server['directory_url']}"
                       caCertificates: "/etc/traefik/pebble.pem"
                       keyType: "EC384"
@@ -147,17 +149,6 @@ class TestTraefikQuadlet(test_quadlet.TestQuadlet):
     expected_main_service = "traefik.target"
     expected_main_service_timeout = 300
 
-    def test_clean_traefik_state(self, fcos_host, keep):
-        if keep:
-            # Stop the traefik.target to ensure a clean state for the tests, but only if --keep is set because otherwise the VM is not reused across runs and is already in a clean state.
-            result = fcos_host.run("systemctl stop traefik.target")
-            assert result.rc == 0, f"Failed to stop traefik.target: {result.stderr}"
-            fcos_host.run("rm -rf /var/lib/quadlets/traefik/acme.json")
-            result = fcos_host.run("systemctl start traefik.target")
-            assert result.rc == 0, f"Failed to start traefik.target: {result.stderr}"
-        else:
-            pytest.skip("Skipping clean Traefik state test because --keep is not set.")
-
     @pytest.mark.flaky(reruns=6, reruns_delay=5)
     def test_traefik_ping_localhost(self, fcos_host):
         """Traefik must respond to the ping endpoint with HTTP 200."""
@@ -165,7 +156,7 @@ class TestTraefikQuadlet(test_quadlet.TestQuadlet):
         assert result.rc == 0, f"curl failed with exit code {result.rc}: {result.stderr}"
         assert result.stdout.strip() == "200", f"Expected HTTP 200 from ping endpoint, got: {result.stdout.strip()}"
 
-    def test_traefik_ping_external(self, fcos_vm, top_level_domain):
+    def test_traefik_reject_ping_external(self, fcos_vm, top_level_domain):
         """Traefik must NOT respond to the ping endpoint outside localhost."""
         result = subprocess.run(
             [
@@ -182,11 +173,14 @@ class TestTraefikQuadlet(test_quadlet.TestQuadlet):
         assert result.returncode == 22, f"curl failed with exit code {result.returncode}: {result.stderr}"
         assert int(result.stdout.strip()) == 403, f"Expected HTTP 403 from ping endpoint, got: {result.stdout.strip()}"
 
+    # This test is flaky because it depends on ACME certificate issuance, which can take time.
+    # During ACME certificate issuance, Traefik responds with a self-signed certificate which causes curl to fail with a certificate error.
+    # We work around this by retrying the test several times with a delay between retries.
     @pytest.mark.flaky(reruns=12, reruns_delay=5)
     def test_traefik_tls(self, fcos_vm, pebble_acme_server, top_level_domain):
         """Traefik must respond to the secure endpoint with HTTP 200."""
 
-        # On the host running pytest, create a temporary dir in /tmp and write the Pebble CA certificate in the pebble.pem file.
+        # Store the Pebble CA bundle in a temporary file so that curl can use it to verify the certificate presented by Traefik.
         tmpdir = tempfile.TemporaryDirectory(delete=True)
         d = Path(tmpdir.name)
         pebble_ca_bundle_path = d / "pebble.pem"
