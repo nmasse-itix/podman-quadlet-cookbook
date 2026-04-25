@@ -20,12 +20,13 @@ help:
 	@echo "  clean          - Remove the quadlets persistent data and configuration"
 	@echo "  dryrun         - Perform a dry run of the podman systemd generator"
 	@echo "  tail-logs      - Tail the logs of the quadlet units"
-	@echo "  butane         - Build Butane specifications suitable for Fedora CoreOS"
+	@echo "  package        - Package the quadlets and systemd units for distribution (Butane, Ignition, tarball, etc.)"
 	@echo "  fcos-vm        - Launch a Fedora CoreOS VM with the generated Butane spec"
 	@echo "  clean-vm       - Clean up the Fedora CoreOS VM but keep its storage resources"
 	@echo "  remove-vm      - Remove all resources related to the Fedora CoreOS VM"
 	@echo "  console        - Connect to the Fedora CoreOS VM console"
 	@echo "  pytest         - Run integration tests on a clean Fedora CoreOS VM"
+	@echo "  debug 		    - Dump makefile variables for debugging purposes"
 	@echo
 	@echo "Useful commands:"
 	@echo
@@ -33,10 +34,11 @@ help:
 	@echo "  2. make uninstall clean install              # Same but also remove persistent data and configuration"
 	@echo "  3. make uninstall install tail-logs          # Replace quadlets and systemd units, then tail their logs"
 	@echo "  4. make I_KNOW_WHAT_I_AM_DOING=yes clean     # Remove all persistent data and configuration without confirmation"
-	@echo "  5. make butane                               # Build Butane specifications suitable for Fedora CoreOS"
+	@echo "  5. make package                              # Package the quadlets and systemd units for distribution (Butane, Ignition, tarball, etc.)"
 	@echo "  6. make fcos-vm console                      # Launch a fresh Fedora CoreOS VM (while retaining its persistent data) and connect to its console"
 	@echo "  7. make remove-vm                            # Remove all resources related to the Fedora CoreOS VM"
 	@echo "  8. make pytest                               # Run integration tests on a clean Fedora CoreOS VM"
+	@echo "  9. make debug | sort   				      # Dump makefile variables for debugging purposes"
 	@echo
 	@echo "All-in-one commands:"
 	@echo
@@ -44,8 +46,13 @@ help:
 	@echo "  2. make fcos-vm console"
 	@echo
 
+# Absolute paths derived from the location of this Makefile
+SCRIPTS_DIR := $(shell realpath $(dir $(lastword $(MAKEFILE_LIST))))
+TOP_LEVEL_DIR := $(shell realpath $(SCRIPTS_DIR)/..)
+COOKBOOKS_DIR := $(shell realpath $(TOP_LEVEL_DIR)/cookbooks)
+
 # Create a temporary directory as target chroot when we detect that we are building Butane specs or launching a Fedora CoreOS VM.
-ifneq ($(filter %.ign %.bu butane fcos-vm,$(MAKECMDGOALS)),)
+ifneq ($(filter %.ign %.bu package fcos-vm,$(MAKECMDGOALS)),)
 ifeq ($(TARGET_CHROOT),)
 export TARGET_CHROOT := $(shell mktemp -d /tmp/butane-chroot-XXXXXX)
 endif
@@ -60,11 +67,6 @@ endif
 # Name of the current project, derived from the current working directory.
 # This is used to create subdirectories for configuration and state files.
 PROJECT_NAME := $(shell basename "$${PWD}")
-
-# Absolute paths derived from the location of this Makefile
-SCRIPTS_DIR := $(shell realpath $(dir $(lastword $(MAKEFILE_LIST))))
-TOP_LEVEL_DIR := $(shell realpath $(SCRIPTS_DIR)/..)
-COOKBOOKS_DIR := $(shell realpath $(TOP_LEVEL_DIR)/cookbooks)
 
 # Quadlets files and their corresponding systemd unit names
 QUADLETS_FILES = $(wildcard *.container *.volume *.network *.pod *.build *.image)
@@ -104,8 +106,8 @@ TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)
 TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
 
 # Example quadlet and systemd drop-ins files
-EXAMPLES_QUADLET_DROPINS_FILES := $(shell find examples -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null)
-EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell find examples -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null)
+EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d examples ]; then find examples -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
+EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell if [ -d examples ]; then find examples -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null; fi)
 TARGET_EXAMPLES_QUADLET_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/containers/systemd/%, $(EXAMPLES_QUADLET_DROPINS_FILES))
 TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/systemd/system/%, $(EXAMPLES_SYSTEMD_DROPINS_FILES))
 
@@ -126,10 +128,10 @@ I_KNOW_WHAT_I_AM_DOING ?=
 
 # List of all ignition files corresponding to the dependencies
 # Here, we inject the "base" project as a dependency. It can therefore be assumed to always be embeddable in project's butane specs.
-DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/$$dep.ign; done)
+DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/build/$$dep.ign; done)
 
 # Variation of the previous variable with the built-in examples.
-DEPENDENCIES_IGNITION_EXAMPLES_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/$$dep.ign $(COOKBOOKS_DIR)/$$dep/$$dep-examples.ign; done)
+DEPENDENCIES_IGNITION_EXAMPLES_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/build/$$dep.ign $(COOKBOOKS_DIR)/$$dep/build/$$dep-examples.ign; done)
 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
@@ -138,6 +140,15 @@ PROJECT_GID ?= 0
 # Source Makefiles providing hooks to extend this Makefile.
 HOOKS := $(wildcard $(COOKBOOKS_DIR)/*/hooks.mk)
 include $(HOOKS)
+
+# Dump makefile variables for debugging purposes
+debug:
+	$(foreach v, $(filter %_FILES SYSTEMD_% QUADLET% PROJECT_% DEPENDENCIES% %_DIR, $(.VARIABLES)), $(info $(v): $($(v))))
+	@echo "TARGET_CHROOT: $(TARGET_CHROOT)"
+	@echo "BUTANE_BLOCKLIST: $(BUTANE_BLOCKLIST)"
+	@echo "BUTANE_START_TS: $(BUTANE_START_TS)"
+	@echo "HOOKS: $(HOOKS)"
+	@echo "I_KNOW_WHAT_I_AM_DOING: $(I_KNOW_WHAT_I_AM_DOING)"
 
 # Ensure that the Makefile is run as root.
 pre-requisites::
@@ -342,11 +353,18 @@ tail-logs: pre-requisites
 	run journalctl "$${journalctl_args[@]}"
 
 pytest: pre-requisites
-	$(MAKE) butane
+	$(MAKE) package
 	pytest tests/
 
+build:
+	mkdir -p build
+
 # Build the Butane specifications, suitable for Fedora CoreOS, including those of the dependencies of this project.
-$(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu &:
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export PROJECT_NAME := $(PROJECT_NAME)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export TARGET_CHROOT := $(TARGET_CHROOT)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export BUTANE_BLOCKLIST := $(BUTANE_BLOCKLIST)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_MAIN_UNIT_NAMES := $(SYSTEMD_MAIN_UNIT_NAMES)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu &: 
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
 	fi; \
@@ -357,55 +375,59 @@ $(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu &:
 		echo "BUTANE_START_TS is not set!"; exit 1; \
 	fi
 	@run() { echo $$*; "$$@"; }; \
+	export ALL_DEPS="$(shell $(MAKE) -s list-dependencies 2>/dev/null)"; \
 	set -Eeuo pipefail; \
-	if [ $(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ $(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
+	if [ build/$(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ build/$(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
 		for dep in base $(DEPENDENCIES); do \
 			if [[ "$$dep" == "$(PROJECT_NAME)" ]]; then \
 				# Avoid building the current project as its own dependency. \
 				continue; \
 			fi ; \
-			if [ $(BUTANE_START_TS) -ot "$(COOKBOOKS_DIR)/$$dep/$$dep.ign" ] && [ $(BUTANE_START_TS) -ot "$(COOKBOOKS_DIR)/$$dep/$$dep-examples.ign" ]; then \
+			if [ $(BUTANE_START_TS) -ot "$(COOKBOOKS_DIR)/$$dep/build/$$dep.ign" ] && [ $(BUTANE_START_TS) -ot "$(COOKBOOKS_DIR)/$$dep/build/$$dep-examples.ign" ]; then \
 				# Dependency is up-to-date. \
 				continue; \
 			fi ; \
-			run $(MAKE) -C $(COOKBOOKS_DIR)/$$dep $$dep.ign $$dep-examples.ign ; \
+			run $(MAKE) -C $(COOKBOOKS_DIR)/$$dep build/$$dep.ign build/$$dep-examples.ign ; \
 		done; \
 		run make install-config; \
 		YQ_FILES="$$(if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)"; \
-		echo "generate-butane-spec.sh $(TARGET_CHROOT) > $(PROJECT_NAME).bu"; \
-		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$YQ_FILES > $(PROJECT_NAME).bu; \
+		echo "generate-butane-spec.sh $(TARGET_CHROOT) > build/$(PROJECT_NAME).bu"; \
+		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$YQ_FILES > build/$(PROJECT_NAME).bu; \
+		$(SCRIPTS_DIR)/generate-tarball.sh build/$(PROJECT_NAME).tar.gz; \
 		(cat $(SCRIPTS_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
 		run make install-examples; \
-		echo "generate-butane-spec.sh $(TARGET_CHROOT) > $(PROJECT_NAME)-examples.bu"; \
-		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > $(PROJECT_NAME)-examples.bu; \
+		echo "generate-butane-spec.sh $(TARGET_CHROOT) > build/$(PROJECT_NAME)-examples.bu"; \
+		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > build/$(PROJECT_NAME)-examples.bu; \
 		(cat $(SCRIPTS_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
 	fi
-.PHONY: $(PROJECT_NAME).bu $(PROJECT_NAME)-examples.bu
+.PHONY: build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu
 
 # Generate the current project's Ignition files from the Butane specs.
-$(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign: %.ign: %.bu
+build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign: %.ign: %.bu build
 	butane --strict -o $@ $<
 
 # Build the Butane specifications + Ignition files suitable for Fedora CoreOS, including those of the dependencies of this project.
-butane: fcos-dev.ign fcos-test.ign
+package: build/$(PROJECT_NAME).tar.gz build/fcos-dev.ign build/fcos-test.ign
 
 # Generate the local Butane spec + Ignition file (the one containing local customizations).
-$(TOP_LEVEL_DIR)/local.ign: $(TOP_LEVEL_DIR)/local.bu
+$(TOP_LEVEL_DIR)/build/local.ign: $(TOP_LEVEL_DIR)/local.bu
+	mkdir -p $(TOP_LEVEL_DIR)/build
 	butane --strict -o $@ $<
 
-.INTERMEDIATE: fcos-dev.bu fcos-test.bu
+.INTERMEDIATE: build/fcos-dev.bu build/fcos-test.bu
+
 # Generate the Butane specs for development and testing by merging the current project's spec with those of the dependencies.
 # The development spec also includes the examples of the dependencies.
 # Whereas the testing spec only includes the main specs of the dependencies.
-fcos-dev.bu fcos-test.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
-fcos-dev.bu: DEPS := $(DEPS) $(addsuffix -examples,$(DEPS))
-fcos-dev.bu fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh
+build/fcos-dev.bu build/fcos-test.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
+build/fcos-dev.bu: DEPS := $(DEPS) $(addsuffix -examples,$(DEPS))
+build/fcos-dev.bu build/fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh build
 	$(SCRIPTS_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPS) > $@
 
 # Generate the final Fedora CoreOS ignition files (dev & test) by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
-fcos-dev.ign: $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
-fcos-test.ign: $(TOP_LEVEL_DIR)/local.ign $(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
-fcos-dev.ign fcos-test.ign: fcos-%.ign: fcos-%.bu
+build/fcos-dev.ign: $(TOP_LEVEL_DIR)/build/local.ign build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
+build/fcos-test.ign: $(TOP_LEVEL_DIR)/build/local.ign build/$(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
+build/fcos-dev.ign build/fcos-test.ign: build/fcos-%.ign: build/fcos-%.bu build
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
 	tmp=$$(mktemp -d /tmp/butane-XXXXXX); \
@@ -426,7 +448,7 @@ fcos-dev.ign fcos-test.ign: fcos-%.ign: fcos-%.bu
 	run mv "$$qcow2" $@
 
 # Copy the ignition file.
-/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: fcos-dev.ign
+/var/lib/libvirt/images/fcos-$(PROJECT_NAME)/fcos.ign: build/fcos-dev.ign
 	install -D -o root -g root -m 0644 $< $@
 
 # Copy the Fedora CoreOS base image to create a new QCOW2 image for the VM.
@@ -488,6 +510,13 @@ units-pre::
 units: units-pre
 	@for unit in $(SYSTEMD_UNIT_NAMES) $(QUADLET_UNIT_NAMES); do echo "$$unit"; done
 
+# List all dependencies of this project and also its transitive dependencies.
+list-dependencies:
+	@for dep in $(DEPENDENCIES); do \
+		echo "$$dep"; \
+		$(MAKE) -s -C $(COOKBOOKS_DIR)/$$dep list-dependencies 2>/dev/null; \
+	done | sort -u
+
 # Custom commands to be run before cleaning persistent data and configuration files.
 # This target can be extended by Makefiles sourcing this one.
 clean-pre::
@@ -503,7 +532,7 @@ clean-post::
 
 # Remove all persistent data and configuration files
 clean: clean-pre pre-requisites
-	rm -f $(PROJECT_NAME){,-examples}.bu *.ign butane.blocklist
+	rm -f build/$(PROJECT_NAME){,-examples}.bu build/*.ign
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
 	if [ "$(I_KNOW_WHAT_I_AM_DOING)" != "yes" ]; then \
@@ -517,7 +546,7 @@ clean: clean-pre pre-requisites
 
 # All phony targets
 .PHONY: all install install-config install-examples uninstall pre-requisites clean dryrun
-.PHONY: tail-logs butane help fcos-vm clean-vm console units units-pre remove-vm
+.PHONY: tail-logs package help fcos-vm clean-vm console units units-pre remove-vm
 .PHONY: clean-pre clean-post install-pre install-post uninstall-pre uninstall-post
 .PHONY: install-files install-files-pre install-files-post install-actions
-.PHONY: install-actions-pre install-actions-post pytest
+.PHONY: install-actions-pre install-actions-post pytest list-dependencies debug

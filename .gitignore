@@ -4,3 +4,4 @@
 !overlay.bu
 __pycache__/
 .pytest_cache/
+**/build/*.tar.gz

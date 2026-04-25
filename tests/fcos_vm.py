@@ -31,11 +31,11 @@ FCOS_BASE_IMAGE = LIBVIRT_IMAGES_DIR / "library" / "fedora-coreos.qcow2"
 BUTANE_VERSION = "1.4.0"
 
 def ensure_fcos_ign(cookbook_dir: Path) -> Path:
-    """Return the path to fcos-test.ign, building it via ``make butane`` if absent."""
-    fcos_ign = cookbook_dir / "fcos-test.ign"
+    """Return the path to fcos-test.ign, building it via ``make package`` if absent."""
+    fcos_ign = cookbook_dir / "build" / "fcos-test.ign"
     if not fcos_ign.exists():
         subprocess.run(
-            ["make", "-C", str(cookbook_dir), "butane"],
+            ["make", "-C", str(cookbook_dir), "package"],
             check=True,
         )
     return fcos_ign
