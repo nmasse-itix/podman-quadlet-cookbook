@@ -6,24 +6,22 @@
 # instance with all necessary quadlets and systemd units to run the
 # podman-quadlet-cookbook tests.
 #
-# It takes the following parameters:
-#   - The target chroot directory where the quadlets and systemd units
-#     have been installed.
-#   - The path to a file containing a list of files and directories
-#     (one per line) to ignore (i.e., files and directories that are
-#     already part of the CoreOS default installation).
-#   - The list of systemd main unit names to enable.
+# The tool takes its parameters from the environment variables defined in the Makefile:
 #
-# It outputs the butane config file to stdout.
+# - TARGET_CHROOT: the target chroot directory containing the files to be included in the tarball.
+# - BUTANE_BLOCKLIST: the path to a file containing a list of files and directories (one per line) to ignore
+#                     (i.e., files and directories that are already part of the CoreOS default installation
+#                     or belonging to another package).
+# - SYSTEMD_MAIN_UNIT_NAMES: the list of systemd main unit names to enable.
+#
+# The path to of the generated butane file is $1, or stdout if $1 is not provided.
 #
 
 set -Eeuo pipefail
 
-TARGET_CHROOT="$1"
-IGNORE_LIST_FILE="$2"
-SYSTEMD_MAIN_UNIT_NAMES="${@:3}"
+OUTPUT="${1:-/dev/stdout}"
 
-cat <<"EOF"
+cat > "$OUTPUT" <<"EOF"
 variant: fcos
 version: 1.4.0
 storage:
@@ -31,12 +29,12 @@ storage:
 EOF
 for file in $(find "$TARGET_CHROOT" \! -type d); do
     rel_path="${file#$TARGET_CHROOT}"
-    if grep -qxF "$rel_path" "$IGNORE_LIST_FILE"; then
+    if grep -qxF "$rel_path" "$BUTANE_BLOCKLIST"; then
 
       # Skip files & directories that are already part of the CoreOS default installation
       continue
     fi
-    cat <<EOF
+    cat >> "$OUTPUT" <<EOF
   - path: "${rel_path}"
     mode: 0$(stat -c '%a' "$file")
     user:
@@ -46,19 +44,19 @@ for file in $(find "$TARGET_CHROOT" \! -type d); do
     contents:
       inline: |
 EOF
-    sed 's/^/        /; $s/$/\n/' "$file"
+    sed 's/^/        /; $s/$/\n/' "$file" >> "$OUTPUT"
 done
-cat <<"EOF"
+cat >> "$OUTPUT" <<"EOF"
   directories:
 EOF
 for dir in $(find "$TARGET_CHROOT" -type d); do
     rel_path="${dir#$TARGET_CHROOT}"
-    if [ -z "$rel_path" ] || grep -qxF "$rel_path" "$IGNORE_LIST_FILE"; then
+    if [ -z "$rel_path" ] || grep -qxF "$rel_path" "$BUTANE_BLOCKLIST"; then
 
       # Skip files & directories that are already part of the CoreOS default installation
       continue
     fi
-    cat <<EOF
+    cat >> "$OUTPUT" <<EOF
   - path: "${rel_path}"
     mode: 0$(stat -c '%a' "$dir")
     user:
@@ -68,12 +66,12 @@ for dir in $(find "$TARGET_CHROOT" -type d); do
 EOF
 done
 
-cat <<"EOF"
+cat >> "$OUTPUT" <<"EOF"
 systemd:
   units:
 EOF
 for unit in ${SYSTEMD_MAIN_UNIT_NAMES}; do
-cat <<EOF
+cat >> "$OUTPUT" <<EOF
   - name: "$unit"
     enabled: true
     mask: false

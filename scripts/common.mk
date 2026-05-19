@@ -364,6 +364,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export TARGET_CHROOT := $(TARGET_CHROOT)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export BUTANE_BLOCKLIST := $(BUTANE_BLOCKLIST)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_MAIN_UNIT_NAMES := $(SYSTEMD_MAIN_UNIT_NAMES)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_TIMER_NAMES := $(SYSTEMD_TIMER_NAMES)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu &: 
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
@@ -391,13 +392,14 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 		done; \
 		run make install-config; \
 		YQ_FILES="$$(if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)"; \
-		echo "generate-butane-spec.sh $(TARGET_CHROOT) > build/$(PROJECT_NAME).bu"; \
-		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) $(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES) | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$YQ_FILES > build/$(PROJECT_NAME).bu; \
+		echo "generate-butane-spec.sh build/$(PROJECT_NAME).bu"; \
+		$(SCRIPTS_DIR)/generate-butane-spec.sh | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$YQ_FILES > build/$(PROJECT_NAME).bu; \
+		echo "generate-tarball.sh build/$(PROJECT_NAME).tar.gz"; \
 		$(SCRIPTS_DIR)/generate-tarball.sh build/$(PROJECT_NAME).tar.gz; \
 		(cat $(SCRIPTS_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
 		run make install-examples; \
-		echo "generate-butane-spec.sh $(TARGET_CHROOT) > build/$(PROJECT_NAME)-examples.bu"; \
-		$(SCRIPTS_DIR)/generate-butane-spec.sh $(TARGET_CHROOT) $(BUTANE_BLOCKLIST) > build/$(PROJECT_NAME)-examples.bu; \
+		echo "generate-butane-spec.sh build/$(PROJECT_NAME)-examples.bu"; \
+		$(SCRIPTS_DIR)/generate-butane-spec.sh build/$(PROJECT_NAME)-examples.bu; \
 		(cat $(SCRIPTS_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
 	fi
 .PHONY: build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu

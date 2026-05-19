@@ -4,6 +4,7 @@ SUBDIRS := $(dir $(SUBDIRS))
 .PHONY: all help package clean dryrun fcos-vm clean-vm uninstall $(SUBDIRS)
 
 export I_KNOW_WHAT_I_AM_DOING ?= no
+export PACKAGE_TARGET_DIR ?= $(realpath $(PWD)/../build)
 
 all: help
 help:
@@ -18,6 +19,12 @@ help:
 
 dryrun: $(SUBDIRS)
 package: $(SUBDIRS)
+	@run() { echo $$*; "$$@"; }; \
+	for dir in $(SUBDIRS); do \
+		dir=$${dir%/}; \
+		run cp $$dir/build/$$dir.ign $(PACKAGE_TARGET_DIR)/$$dir.ign; \
+		run cp $$dir/build/$$dir.tar.gz $(PACKAGE_TARGET_DIR)/$$dir.tar.gz; \
+	done
 clean: $(SUBDIRS)
 
 fcos-vm: $(SUBDIRS)
