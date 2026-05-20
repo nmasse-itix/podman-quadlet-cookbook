@@ -356,9 +356,6 @@ pytest: pre-requisites
 	$(MAKE) package
 	pytest tests/
 
-build:
-	mkdir -p build
-
 # Build the Butane specifications, suitable for Fedora CoreOS, including those of the dependencies of this project.
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export PROJECT_NAME := $(PROJECT_NAME)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export TARGET_CHROOT := $(TARGET_CHROOT)
@@ -376,6 +373,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 		echo "BUTANE_START_TS is not set!"; exit 1; \
 	fi
 	@run() { echo $$*; "$$@"; }; \
+	run mkdir -p build; \
 	export ALL_DEPS="$(shell $(MAKE) -s list-dependencies 2>/dev/null)"; \
 	set -Eeuo pipefail; \
 	if [ build/$(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ build/$(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
