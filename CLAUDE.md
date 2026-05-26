@@ -13,6 +13,7 @@ You may be given Kustomize manifests, Helm charts, Docker Compose files, etc. th
 ## Architecture
 
 - Convention over configuration: place the files at the right place and the tooling (Makefile) will take care of placing that file at the right location.
+- Do not create Pods!
 
 ## Useful tools
 
