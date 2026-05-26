@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull quay.io/projectquay/quay:3.17.1
+Documentation=https://docs.projectquay.io/
+
+[Image]
+Image=quay.io/projectquay/quay:3.17.1

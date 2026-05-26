@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: quay
+    uid: 10026
+    gecos: Quay Container Registry
+    home_dir: /var/lib/quadlets/quay
+    primary_group: itix-svc

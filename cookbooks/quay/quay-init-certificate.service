@@ -1,0 +1,15 @@
+[Unit]
+Description=Initialize Quay TLS certificates if not already present
+Before=quay-app.service
+After=lego.target
+
+# Start/stop this unit when the target is started/stopped
+PartOf=quay.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/quadlets/quay/quay_load_tls_certs.sh
+
+[Install]
+WantedBy=quay.target

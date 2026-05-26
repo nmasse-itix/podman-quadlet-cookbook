@@ -1,0 +1,44 @@
+[Unit]
+Description=Clair Vulnerability Scanner for Quay
+Documentation=https://quay.github.io/clair/
+After=network.target
+
+# Only start if Clair has been configured
+ConditionPathExists=/etc/quadlets/quay/clair/config.yaml
+
+# Start/stop this unit when the target is started/stopped
+PartOf=quay.target
+
+[Container]
+ContainerName=quay-clair
+Image=quay-clair.image
+
+# Clair runs as the nobody user (65534) inside the container
+User=65534
+Group=65534
+
+# UID/GID mapping to map the nobody (65534) user inside the container to arbitrary user 10026 / group 10000 on the host
+UIDMap=0:1000000:65535
+UIDMap=+65534:10026:1
+GIDMap=0:1000000:65535
+GIDMap=+65534:10000:1
+
+# Network configuration
+Network=host
+
+# Configuration
+Volume=/etc/quadlets/quay/clair:/etc/clair:Z,ro
+
+# Run Clair in combo mode (indexer + matcher + notifier in a single process)
+Exec=-conf /etc/clair/config.yaml
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=quay.target

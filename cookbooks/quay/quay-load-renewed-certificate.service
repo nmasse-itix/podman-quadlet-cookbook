@@ -1,0 +1,17 @@
+[Unit]
+Description=Reload Quay TLS certificate after Lego renewal
+# Lego touches .renewed files when renewed certificates are available
+ConditionPathExistsGlob=/var/lib/quadlets/lego/certificates/*.renewed
+After=lego-renew.service
+
+[Service]
+Type=oneshot
+# Copy the renewed certificates to the Quay TLS directory
+ExecStart=/etc/quadlets/quay/quay_load_tls_certs.sh
+# Restart Quay to load the new certificate
+ExecStart=systemctl --no-block restart quay-app.service
+# Remove the flag files after restarting Quay
+ExecStartPost=/bin/sh -Eeuo pipefail -c 'rm -f /var/lib/quadlets/lego/certificates/*.renewed'
+
+[Install]
+WantedBy=lego-renew.service

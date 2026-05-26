@@ -1,0 +1,327 @@
+# Quay Container Registry configuration
+# Copy this file to /etc/quadlets/quay/app/config.yaml and customize it.
+#
+# For more information on configuration options, see:
+# - the json schema of the config tool: https://github.com/quay/app/blob/master/config-tool/utils/generate/schema.json
+# - the json schema of the Python core: https://github.com/quay/app/blob/master/util/config/schema.py
+
+# The URL at which Quay is accessible, without the scheme.
+SERVER_HOSTNAME: localhost
+
+# The URL scheme to use when hitting Quay. If Quay is behind SSL *at all*, this *must* be `https`
+PREFERRED_URL_SCHEME: https
+
+# SSL certificates for HTTPS.
+SSL_CERTFILE: /quay-registry/conf/stack/tls/ssl.crt
+SSL_KEYFILE: /quay-registry/conf/stack/tls/ssl.key
+
+# Secret key for signing database entries (generate a strong random value)
+DATABASE_SECRET_KEY: 'REDACTEDREDACTEDREDACTED'
+
+# Local filesystem storage for container images
+DISTRIBUTED_STORAGE_CONFIG:
+  default:
+    - LocalStorage
+    - storage_path: /datastorage/registry
+DISTRIBUTED_STORAGE_DEFAULT_LOCATIONS: []
+DISTRIBUTED_STORAGE_PREFERENCE:
+  - default
+
+# The authentication engine to use for credential authentication.
+AUTHENTICATION_TYPE: Database
+
+# The URI at which to access the database, including any credentials.
+DB_URI: postgresql://quay:quay@127.0.0.1:5432/quay
+
+# If specified, connection arguments for the database such as timeouts and SSL.
+# DB_CONNECTION_ARGS: 
+
+# Connection information for Redis for build logs caching
+BUILDLOGS_REDIS: 
+  host: localhost
+  password: quay
+  port: 6379
+
+# Connection information for Redis for user events caching
+USER_EVENTS_REDIS:
+  host: localhost
+  password: quay
+  port: 6379
+
+# Whether to allow the first user to be bootstrapped through API call.
+# If true, the first call to the /api/v1/user/initialize endpoint will create a user with the provided credentials, and this endpoint will be disabled after that. Defaults to False.
+# 
+# Tip: You can then create the first superuser with the following command:
+#
+# ```sh
+# ADMIN_PASSWORD='F00barbaz'
+# curl -vk -X POST https://localhost:8443/api/v1/user/initialize -H 'Content-Type: application/json' --data "{\"username\":\"quayadmin\",\"password\":\"${ADMIN_PASSWORD}\",\"email\": \"root@localhost\",\"access_token\": true}"
+# ```
+FEATURE_USER_INITIALIZE: true
+
+# Superusers have the following capabilities:
+# - User management
+# - Organization management
+# - Service key management
+# - Change log transparency
+# - Usage log management
+# - Globally-visible user message creation
+SUPER_USERS:
+  - quayadmin
+
+# Mark initial setup as complete
+SETUP_COMPLETE: true
+
+# Enable the new UI
+FEATURE_UI_V2: true
+
+# Restrict the API to only allow XHR calls from the browser. Defaults to False.
+BROWSER_API_CALLS_XHR_ONLY: false
+
+# Automatically create a namespace for each organization on push, if it doesn't already exist
+CREATE_NAMESPACE_ON_PUSH: true
+
+# Whether users can directly login to the UI. Defaults to True
+# FEATURE_DIRECT_LOGIN: true
+
+# Whether GitHub login is supported. Defaults to False
+# FEATURE_GITHUB_LOGIN: false
+
+# Whether Google login is supported. Defaults to False
+# FEATURE_GOOGLE_LOGIN: false
+
+# Whether users can be created (by non-super users). Defaults to True
+FEATURE_USER_CREATION: false
+
+# Whether users being created must be invited by another user. Defaults to False
+# FEATURE_INVITE_ONLY_USER_CREATION: false
+
+# If set to true, autocompletion will apply to partial usernames. Defaults to True
+# FEATURE_PARTIAL_USER_AUTOCOMPLETE: true
+
+# Whether to record the last time a user was accessed. Defaults to True
+# FEATURE_USER_LAST_ACCESSED: true
+
+# If set to true, users will have access to audit logs for their namespace. Defaults to False
+FEATURE_USER_LOG_ACCESS: true
+
+# Whether to collect and support user metadata. Defaults to False
+# FEATURE_USER_METADATA: false
+
+# If set to true, users can confirm their generated usernames. Defaults to True
+# FEATURE_USERNAME_CONFIRMATION: true
+
+# If set to true, users can rename their own namespace. Defaults to False
+FEATURE_USER_RENAME: true
+
+#  Whether to allow anonymous users to browse and pull public repositories. Defaults to True
+FEATURE_ANONYMOUS_ACCESS: false
+
+# The length of time a token for recovering a user accounts is valid. Defaults to 30m.
+# USER_RECOVERY_TOKEN_LIFETIME: 30m
+
+# The time after which a fresh login requires users to reenter their password
+# FRESH_LOGIN_TIMEOUT: 10m
+
+# Whether or not to rotate old action logs to storage. Defaults to False
+# FEATURE_ACTION_LOG_ROTATION: false
+
+# If action log archiving is enabled, the path in storage in which to place the archived data.
+# ACTION_LOG_ARCHIVE_PATH: 
+
+# If action log archiving is enabled, the storage engine in which to place the archived data.
+# ACTION_LOG_ARCHIVE_LOCATION: 
+
+# Whether to proxy all direct download URLs in storage via the registry nginx. Defaults to False
+# FEATURE_PROXY_STORAGE: false
+
+# Configuration for storage engine(s) to use in Quay. Each key is a unique ID for a storage engine, with the value being a tuple of the type and  configuration for that engine.
+# DISTRIBUTED_STORAGE_CONFIG: 
+
+# If specified, the long-form title for the registry. Defaults to `Red Hat Quay`.
+# REGISTRY_TITLE: Project Quay
+
+# If specified, the short-form title for the registry. Defaults to `Red Hat Quay`.
+# REGISTRY_TITLE_SHORT: Project Quay
+
+# Number of results returned per page by search page. Defaults to 10
+# SEARCH_RESULTS_PER_PAGE: 10
+
+# Maximum number of pages the user can paginate in search before they are limited. Defaults to 10
+# SEARCH_MAX_RESULT_PAGE_COUNT: 10
+
+# If specified, contact information to display on the contact page. If only a single piece of contact information is specified, the contact footer will link directly.
+# CONTACT_INFO: []
+
+# The types of avatars to display, either generated inline (local) or Gravatar (gravatar)
+# AVATAR_KIND: local
+
+# Custom branding for logos and URLs in the Quay UI
+# BRANDING: 
+
+# Root URL for documentation links
+# DOCUMENTATION_ROOT: 
+
+# Whether to allow for team membership to be synced from a backing group in the authentication engine (LDAP or Keystone)
+# FEATURE_TEAM_SYNCING: false
+
+# If enabled, non-superusers can setup syncing on teams to backing LDAP or Keystone. Defaults To False.
+# FEATURE_NONSUPERUSER_TEAM_SYNCING_SETUP: false
+
+# If team syncing is enabled for a team, how often to check its membership and resync if necessary (Default: 30m)
+# TEAM_RESYNC_STALE_TIME: 30m
+
+# If enabled, users can create tokens for use by the Docker CLI. Defaults to True
+# FEATURE_APP_SPECIFIC_TOKENS: true
+
+# Whether to turn of/off the security scanner. Defaults to False
+FEATURE_SECURITY_SCANNER: true
+
+# If 'SECURITY_SCANNER_V4_SIGN_JWT', Quay will sign JWTs with either the key provided by `SECURITY_SCANNER_V4_PSK' or the Quay instance's private key otherwise.
+SECURITY_SCANNER_V4_SIGN_JWT: true
+
+# The endpoint for the V2 security scanner
+# SECURITY_SCANNER_ENDPOINT: 
+
+# Whether or not to the security scanner notification feature
+# SECURITY_SCANNER_NOTIFICATIONS: false
+
+# The number of seconds between indexing intervals in the security scanner. Defaults to 30.
+# SECURITY_SCANNER_INDEXING_INTERVAL: 30
+
+# The endpoint for the V4 security scanner
+SECURITY_SCANNER_V4_ENDPOINT: http://localhost:6060
+
+# The namespaces to which the security scanner should be enabled for
+# SECURITY_SCANNER_V4_NAMESPACE_WHITELIST: []
+
+# If 'SECURITY_SCANNER_V4_SIGN_JWT', Quay will sign JWTs with either the key provided by `SECURITY_SCANNER_V4_PSK' (if specified here) or the Quay instance's private key otherwise.
+SECURITY_SCANNER_V4_PSK: 'REDACTEDREDACTEDREDACTED'
+
+# The issuer name to use in JWTs for the security scanner.
+SECURITY_SCANNER_ISSUER_NAME: security_scanner
+
+# Whether to support Dockerfile build. Defaults to True
+# FEATURE_BUILD_SUPPORT: 
+
+# Configuration for using BitBucket for build triggers
+# BITBUCKET_TRIGGER_CONFIG: 
+
+# Whether to support Bitbucket build triggers. Defaults to False
+# FEATURE_BITBUCKET_BUILD: false
+
+# Act as a proxy cache for upstream registries (e.g. Docker Hub, Quay.io, etc.)
+FEATURE_PROXY_CACHE: true
+
+# Logs model for action logs
+# LOGS_MODEL: database
+
+# Logs model config for action logs
+# LOGS_MODEL_CONFIG: 
+
+# Whether to support GitHub build triggers. Defaults to False
+# FEATURE_GITHUB_BUILD: false
+
+# Configuration for using GitHub (Enterprise) for build triggers
+# GITHUB_TRIGGER_CONFIG: 
+
+# Configuration for using GitHub (Enterprise) as an external login provider
+# GITHUB_LOGIN_CONFIG: 
+
+# Whether to support GitLab build triggers. Defaults to False
+# FEATURE_GITLAB_BUILD: false
+
+# Configuration for using Gitlab (Enterprise) for external authentication
+# GITLAB_TRIGGER_CONFIG: 
+
+# Configuration for using Google for external authentication
+# GOOGLE_LOGIN_CONFIG: 
+
+# The endpoint for JWT verification
+# JWT_VERIFY_ENDPOINT: 
+
+# The endpoint for JWT queries
+# JWT_QUERY_ENDPOINT: 
+
+# The endpoint for JWT users
+# JWT_GETUSER_ENDPOINT: 
+
+# The endpoint for JWT users
+# JWT_AUTH_ISSUER: 
+
+# Whether emails are enabled. Defaults to False
+FEATURE_MAILING: false
+
+# If TLS is supported, but terminated at a layer before Quay, must be true.
+# EXTERNAL_TLS_TERMINATION: false
+
+# Whether to enable support for repository mirroring. Defaults to False
+FEATURE_REPO_MIRROR: true
+
+# Require HTTPS and verify certificates of Quay registry during mirror. Defaults to True
+REPO_MIRROR_TLS_VERIFY: false
+
+# The number of seconds between checking for repository mirror candidates. Defaults to 30.
+# REPO_MIRROR_INTERVAL: 30
+
+# Replaces the SERVER_HOSTNAME as the destination for mirroring. Defaults to unset
+# REPO_MIRROR_SERVER_HOSTNAME: 
+
+# Maximum size in bytes of manifest list JSON to parse during mirroring. Prevents DoS via oversized manifests. Defaults to 10485760 (10MB).
+# REPO_MIRROR_MAX_MANIFEST_LIST_SIZE: 10485760
+
+# Maximum number of manifest entries to process during architecture-filtered mirroring. Prevents DoS via manifest lists with excessive entries. Defaults to 1000.
+# REPO_MIRROR_MAX_MANIFEST_ENTRIES: 1000
+
+# The SMTP server to use for sending e-mails. Only required if FEATURE_MAILING is set to true.
+# MAIL_SERVER: 
+
+# The SMTP port to use. If not specified, defaults to 587.
+# MAIL_PORT: 587
+
+# If set to true, no new User accounts may be created if their email domain is blacklisted.
+# FEATURE_BLACKLISTED_EMAILS: false
+
+# The array of email-address domains that is used if FEATURE_BLACKLISTED_EMAILS is set to true.
+# BLACKLISTED_EMAIL_DOMAINS: []
+
+# Whether or not to use authentication for mail server.
+# MAIL_USE_AUTH: false
+
+# The SMTP username to use when sending e-mails.
+# MAIL_USERNAME: 
+
+# The SMTP password to use when sending e-mails.
+# MAIL_PASSWORD: 
+
+# If specified, the e-mail address used as the `from` when Quay sends e-mails. If none, defaults to `support@quay.io`.
+# MAIL_DEFAULT_SENDER: support@quay.io
+
+# If specified, whether to use TLS for sending e-mails.
+# MAIL_USE_TLS: false
+
+# Whether users and organizations are allowed to change the tag expiration for tags in their namespace. Defaults to True.
+# FEATURE_CHANGE_TAG_EXPIRATION: true
+
+# The options that users can select for expiration of tags in their namespace (if enabled)
+# TAG_EXPIRATION_OPTIONS: [2w]
+
+# The default, configurable tag expiration time for time machine. Defaults to `2w`.
+# DEFAULT_TAG_EXPIRATION: 2w
+
+# LDAP configuration for external authentication. Only required if AUTHENTICATION_TYPE is set to LDAP.
+# LDAP_ADMIN_DN: 
+# LDAP_ADMIN_PASSWD: 
+# LDAP_URI: ldap://localhost
+# LDAP_ALLOW_INSECURE_FALLBACK: false
+# LDAP_BASE_DN: 
+# LDAP_USER_RDN: []
+# LDAP_UID_ATTR: uid
+# LDAP_EMAIL_ATTR: mail
+# LDAP_USER_FILTER: 
+
+# If set to true, auto pruning of images is supported. Defaults to False
+# FEATURE_AUTO_PRUNE: true
+
+# Default org wide auto prune policy. Defaults to empty
+# DEFAULT_NAMESPACE_AUTOPRUNE_POLICY: 

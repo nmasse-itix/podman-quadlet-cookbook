@@ -1,0 +1,49 @@
+[Unit]
+Description=Redis cache for Quay
+Documentation=https://hub.docker.com/_/redis
+After=network.target var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Only start if Redis has been configured
+ConditionPathExists=/etc/quadlets/quay/redis/redis.env
+ConditionPathExists=/etc/quadlets/quay/redis/redis.conf
+
+# Start/stop this unit when the target is started/stopped
+PartOf=quay.target
+
+[Container]
+ContainerName=quay-redis
+Image=quay-redis.image
+
+# Network configuration
+Network=host
+
+# Redis configuration with authentication
+Exec=redis-server /usr/local/etc/redis/redis.conf
+
+# No need for root privileges
+User=10026
+Group=10000
+
+# Storage
+Volume=/var/lib/virtiofs/data/quay/redis:/data:Z
+Volume=/etc/quadlets/quay/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro,Z
+
+# Health check
+HealthCmd=redis-cli -t 5 ping | grep -qFx PONG
+HealthInterval=30s
+HealthTimeout=5s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# These environment variables are sourced to be used by systemd in the Exec* commands
+EnvironmentFile=/etc/quadlets/quay/redis/redis.env
+
+[Install]
+WantedBy=quay.target

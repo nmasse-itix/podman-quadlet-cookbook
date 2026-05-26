@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull quay.io/projectquay/clair:4.9.0
+Documentation=https://quay.github.io/clair/
+
+[Image]
+Image=quay.io/projectquay/clair:4.9.0

@@ -1,0 +1,56 @@
+[Unit]
+Description=Quay Container Registry Application
+Documentation=https://docs.projectquay.io/
+After=network.target quay-redis.service quay-init-certificate.service var-lib-virtiofs-data.mount
+Requires=quay-redis.service quay-init-certificate.service var-lib-virtiofs-data.mount
+
+# Only start if Quay has been configured
+ConditionPathExists=/etc/quadlets/quay/app/config.yaml
+
+# Start/stop this unit when the target is started/stopped
+PartOf=quay.target
+
+[Container]
+ContainerName=quay-app
+Image=quay-app.image
+
+# Quay runs as the quay user (1001) inside the container
+User=1001
+Group=0
+
+# UID/GID mapping to map the quay (1001/0) user inside the container to arbitrary user 10026 / group 10000 on the host
+UIDMap=0:1000000:65535
+UIDMap=+1001:10026:1
+GIDMap=0:1000000:65535
+GIDMap=+0:10000:1
+
+# Network configuration
+Network=host
+
+# Storage
+Volume=/var/lib/virtiofs/data/quay/storage:/datastorage:Z
+
+# Configuration
+Volume=/etc/quadlets/quay/app:/quay-registry/conf/stack:Z,ro
+
+# Health check
+HealthCmd=curl -sk https://localhost:8443/health/instance
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=120s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+# Wait for Redis to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/6379; then echo "Waiting for Redis to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=quay.target

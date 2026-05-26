@@ -1,0 +1,13 @@
+[Unit]
+Description=Quay Container Registry Target
+Documentation=https://docs.projectquay.io/
+Requires=quay-redis.service quay-clair.service quay-app.service quay-init-certificate.service
+After=quay-redis.service quay-clair.service quay-app.service quay-init-certificate.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Quay has been configured
+ConditionPathExists=/etc/quadlets/quay/config.yaml
+
+[Install]
+WantedBy=multi-user.target

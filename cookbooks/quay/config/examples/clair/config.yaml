@@ -1,0 +1,31 @@
+# Clair vulnerability scanner configuration
+# Copy this file to /etc/quadlets/quay/clair-config.yaml and customize it.
+# See https://quay.github.io/clair/reference/config.html for the full reference.
+#
+# Clair runs in combo mode: indexer, matcher and notifier all run in a single
+# process sharing the same PostgreSQL database.
+
+http_listen_addr: ":6060"
+introspection_addr: ":8089"
+log_level: info
+
+indexer:
+  connstring: "host=127.0.0.1 port=5432 user=clair password=clair dbname=clair sslmode=disable"
+  migrations: true
+
+matcher:
+  connstring: "host=127.0.0.1 port=5432 user=clair password=clair dbname=clair sslmode=disable"
+  migrations: true
+  indexer_addr: http://localhost:6060
+
+notifier:
+  connstring: "host=127.0.0.1 port=5432 user=clair password=clair dbname=clair sslmode=disable"
+  migrations: true
+
+auth:
+  psk:
+    # Pre-shared key for Clair <-> Quay authentication (must match config.yaml)
+    key: 'REDACTEDREDACTEDREDACTED'
+    iss:
+      - quay
+      - clairctl
