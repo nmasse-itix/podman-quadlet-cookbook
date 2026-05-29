@@ -1,0 +1,7 @@
+#!/usr/sbin/nft -f
+
+# Lego listens on port 80 and Quay on port 8443
+add rule inet itix-fw input tcp dport { 80, 8443 } counter accept
+
+# Redirect port 443 to 8443 (Quay)
+add rule inet itix-nat prerouting tcp dport 443 counter redirect to 8443
