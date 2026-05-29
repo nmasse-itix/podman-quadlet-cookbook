@@ -41,6 +41,8 @@ for file in $(find "$TARGET_CHROOT" \! -type d); do
       id: $(stat -c '%u' "$file")
     group:
       id: $(stat -c '%g' "$file")
+    # Overwrite is set to true because /etc and /var are persistent between two applications of the ignition file
+    overwrite: true
     contents:
       inline: |
 EOF
