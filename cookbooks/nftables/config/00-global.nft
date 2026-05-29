@@ -1,0 +1,46 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet itix-fw {
+    chain input {
+        type filter hook input priority filter + 20
+        policy drop
+
+        ct state invalid counter drop
+        ct state { established, related } counter accept
+
+        # Loopback
+        iifname lo counter accept
+    }
+
+    chain output {
+        type filter hook output priority filter + 20
+        policy drop
+
+        ct state invalid counter drop
+        ct state { established, related } counter accept
+
+        # Loopback
+        oifname lo counter accept
+    }
+
+    chain forward {
+        type filter hook forward priority filter + 20
+        policy drop
+
+        # Loopback
+        iifname lo oifname lo counter accept
+    }
+}
+
+table inet itix-nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat + 20
+        policy accept
+    }
+    chain postrouting {
+        type nat hook postrouting priority srcnat + 20
+        policy accept
+    }
+}

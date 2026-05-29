@@ -1,0 +1,7 @@
+#!/usr/sbin/nft -f
+
+# Enable SSH connections from anywhere
+add rule inet itix-fw input tcp dport 22 counter accept
+
+# Allow outgoing connections
+add rule inet itix-fw output counter accept
