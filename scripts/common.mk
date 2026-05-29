@@ -83,7 +83,12 @@ SYSTEMD_UNIT_NAMES := $(wildcard *.service *.target *.timer *.mount)
 SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
 
 # The main systemd units will be enabled and started after installation.
-SYSTEMD_MAIN_UNIT_NAMES := $(wildcard *.target)
+SYSTEMD_MAIN_UNIT_NAMES ?= $(wildcard *.target)
+SYSTEMD_START_UNITS = $(SYSTEMD_MAIN_UNIT_NAMES)
+
+# Generated systemd units (quadlets) cannot be enabled.
+# That's why we filter them out from the list of units to be enabled.
+SYSTEMD_ENABLE_UNITS = $(filter-out $(QUADLET_UNIT_NAMES),$(SYSTEMD_MAIN_UNIT_NAMES))
 
 # Configuration files
 CONFIG_FILES := $(shell find config/ -mindepth 1 \! -path "config/examples/*" \! -path "config/examples" 2>/dev/null)
@@ -255,28 +260,28 @@ install-files-pre::
 # This target can be extended by Makefiles sourcing this one.
 install-files-post::
 
-# Generated systemd units (quadlets) cannot be enabled.
-# That's why we filter them out from the list of units to be enabled.
-install-actions uninstall: ENABLE_UNITS = $(filter-out $(QUADLET_UNIT_NAMES),$(SYSTEMD_MAIN_UNIT_NAMES) $(SYSTEMD_TIMER_NAMES))
-install-actions uninstall: START_UNITS = $(SYSTEMD_MAIN_UNIT_NAMES)
-
 # Perform post-installation actions such as enabling and starting units.
 install-actions: install-actions-pre
 	systemctl daemon-reload
-	systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES) $(SYSTEMD_UNIT_NAMES)
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
+	if [[ ! "$(QUADLET_UNIT_NAMES)" =~ ^[[:space:]]*$$ ]]; then \
+		run systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES); \
+	fi; \
+	if [[ ! "$(SYSTEMD_UNIT_NAMES)" =~ ^[[:space:]]*$$ ]]; then \
+		run systemd-analyze --generators=true verify $(SYSTEMD_UNIT_NAMES); \
+	fi; \
 	if [ -f /etc/tmpfiles.d/$(PROJECT_NAME).conf ]; then \
 		run systemd-tmpfiles --create /etc/tmpfiles.d/$(PROJECT_NAME).conf; \
 	fi; \
 	if [ -f /etc/sysctl.d/$(PROJECT_NAME).conf ]; then \
 		run sysctl -q -p /etc/sysctl.d/$(PROJECT_NAME).conf; \
 	fi ; \
-	if [ -n "$(ENABLE_UNITS)" ]; then \
-		run systemctl enable $(ENABLE_UNITS); \
+	if [ -n "$(SYSTEMD_ENABLE_UNITS)" ]; then \
+		run systemctl enable $(SYSTEMD_ENABLE_UNITS); \
 	fi ; \
-	if [ -n "$(START_UNITS)" ]; then \
-		run systemctl start $(START_UNITS); \
+	if [ -n "$(SYSTEMD_START_UNITS)" ]; then \
+		run systemctl start $(SYSTEMD_START_UNITS); \
 	fi
 	$(MAKE) install-actions-post
 
@@ -314,11 +319,11 @@ uninstall: FILES_TO_REMOVE := $(shell echo $(TARGET_FILES) $(TARGET_EXAMPLE_FILE
 uninstall: pre-requisites uninstall-pre
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
-	if [ -n "$(ENABLE_UNITS)" ]; then \
-		run systemctl disable $(ENABLE_UNITS) || true; \
+	if [ -n "$(SYSTEMD_ENABLE_UNITS)" ]; then \
+		run systemctl disable $(SYSTEMD_ENABLE_UNITS) || true; \
 	fi ; \
-	if [ -n "$(START_UNITS)" ]; then \
-		run systemctl stop $(START_UNITS) || true; \
+	if [ -n "$(SYSTEMD_START_UNITS)" ]; then \
+		run systemctl stop $(SYSTEMD_START_UNITS) || true; \
 	fi
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
@@ -360,7 +365,8 @@ pytest: pre-requisites
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export PROJECT_NAME := $(PROJECT_NAME)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export TARGET_CHROOT := $(TARGET_CHROOT)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export BUTANE_BLOCKLIST := $(BUTANE_BLOCKLIST)
-build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_MAIN_UNIT_NAMES := $(SYSTEMD_MAIN_UNIT_NAMES)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_ENABLE_UNITS := $(SYSTEMD_ENABLE_UNITS)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_START_UNITS := $(SYSTEMD_START_UNITS)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_TIMER_NAMES := $(SYSTEMD_TIMER_NAMES)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu &: 
 	@if [ -z "$(TARGET_CHROOT)" ]; then \

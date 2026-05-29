@@ -68,13 +68,21 @@ if [ "${#files_to_include[@]}" -gt 0 ]; then
 else
   echo "files: []" >> "$metadata_file"
 fi
-if [ -n "${SYSTEMD_MAIN_UNIT_NAMES}" ]; then
-  echo "systemd_main_units:" >> "$metadata_file"
-  for unit in ${SYSTEMD_MAIN_UNIT_NAMES}; do
+if [ -n "${SYSTEMD_START_UNITS}" ]; then
+  echo "systemd_start_units:" >> "$metadata_file"
+  for unit in ${SYSTEMD_START_UNITS}; do
     echo "- $unit"
   done >> "$metadata_file"
 else
-  echo "systemd_main_units: []" >> "$metadata_file"
+  echo "systemd_start_units: []" >> "$metadata_file"
+fi
+if [ -n "${SYSTEMD_ENABLE_UNITS}" ]; then
+  echo "systemd_enable_units:" >> "$metadata_file"
+  for unit in ${SYSTEMD_ENABLE_UNITS}; do
+    echo "- $unit"
+  done >> "$metadata_file"
+else
+  echo "systemd_enable_units: []" >> "$metadata_file"
 fi
 # Convert metadata.yaml to metadata.json
 yq -o json "$metadata_file" > "$tmp_dir/metadata.json"

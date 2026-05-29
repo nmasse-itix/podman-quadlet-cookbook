@@ -1,9 +1,10 @@
-# Include common Makefile
-include ../../scripts/common.mk
 
-SYSTEMD_MAIN_UNIT_NAMES += var-lib-virtiofs-data.mount
+SYSTEMD_MAIN_UNIT_NAMES := var-lib-virtiofs-data.mount
 SYSTEMD_MAIN_UNIT_NAMES += rpm-ostree-install-qemu-guest-agent.service
 SYSTEMD_MAIN_UNIT_NAMES += install-fastfetch.service
+
+# Include common Makefile
+include ../../scripts/common.mk
 
 pre-requisites::
 	@set -Eeuo pipefail; \

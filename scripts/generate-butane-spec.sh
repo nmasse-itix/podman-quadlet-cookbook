@@ -70,7 +70,7 @@ cat >> "$OUTPUT" <<"EOF"
 systemd:
   units:
 EOF
-for unit in ${SYSTEMD_MAIN_UNIT_NAMES}; do
+for unit in ${SYSTEMD_ENABLE_UNITS}; do
 cat >> "$OUTPUT" <<EOF
   - name: "$unit"
     enabled: true
