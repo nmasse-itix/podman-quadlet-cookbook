@@ -5,6 +5,7 @@ SUBDIRS := $(dir $(SUBDIRS))
 
 export I_KNOW_WHAT_I_AM_DOING ?= no
 export PACKAGE_TARGET_DIR ?= $(realpath $(PWD)/../build)
+export PACKAGE_TARGET_FORMAT ?= ignition butane archive
 
 all: help
 help:
@@ -22,8 +23,16 @@ package: $(SUBDIRS)
 	@run() { echo $$*; "$$@"; }; \
 	for dir in $(SUBDIRS); do \
 		dir=$${dir%/}; \
-		run cp $$dir/build/$$dir.ign $(PACKAGE_TARGET_DIR)/$$dir.ign; \
-		run cp $$dir/build/$$dir.tar.gz $(PACKAGE_TARGET_DIR)/$$dir.tar.gz; \
+		if [[ "$(PACKAGE_TARGET_FORMAT)" == *ignition* ]]; then \
+			run cp $$dir/build/$$dir.ign $(PACKAGE_TARGET_DIR)/$$dir.ign; \
+		fi ; \
+		if [[ "$(PACKAGE_TARGET_FORMAT)" == *butane* ]]; then \
+			run cp $$dir/build/$$dir.bu $(PACKAGE_TARGET_DIR)/$$dir.bu; \
+			run cp $$dir/build/$${dir}-examples.bu $(PACKAGE_TARGET_DIR)/$${dir}-examples.bu; \
+		fi ; \
+		if [[ "$(PACKAGE_TARGET_FORMAT)" == *archive* ]]; then \
+			run cp $$dir/build/$$dir.tar.gz $(PACKAGE_TARGET_DIR)/$$dir.tar.gz; \
+		fi ; \
 	done
 clean: $(SUBDIRS)
 
