@@ -1,8 +1,8 @@
 [Unit]
 Description=Nextcloud Application - Cron Job
 Documentation=https://hub.docker.com/_/nextcloud/
-After=nextcloud-redis.service postgresql-server.service var-lib-virtiofs-data.mount
-Requires=nextcloud-redis.service postgresql-server.service var-lib-virtiofs-data.mount
+After=redis-server.service postgresql-server.service var-lib-virtiofs-data.mount
+Requires=redis-server.service postgresql-server.service var-lib-virtiofs-data.mount
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env

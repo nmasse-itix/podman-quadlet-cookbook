@@ -1,9 +1,9 @@
 [Unit]
 Description=Nextcloud Application - Upgrade
 Documentation=https://hub.docker.com/_/nextcloud/
-After=network.target nextcloud-redis.service postgresql-server.service
+After=network.target redis-server.service postgresql-server.service
 Before=nextcloud-app.service
-Requires=nextcloud-redis.service postgresql-server.service
+Requires=redis-server.service postgresql-server.service
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env

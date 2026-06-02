@@ -6,7 +6,7 @@
 PROJECT_UID = 10026
 PROJECT_GID = 10000
 
-DEPENDENCIES = postgresql lego nftables
+DEPENDENCIES = postgresql redis lego nftables
 
 # Include common Makefile
 include ../../scripts/common.mk

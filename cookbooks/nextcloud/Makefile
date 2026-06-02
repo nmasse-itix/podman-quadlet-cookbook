@@ -2,19 +2,19 @@
 ## Makefile for PostgreSQL quadlet
 ##
 
-DEPENDENCIES = postgresql traefik
+DEPENDENCIES = postgresql redis traefik
 
 # Nextcloud quadlet is mapped to the 10008 user (nextcloud) and 10000 group (itix-svc)
 PROJECT_UID = 10008
 PROJECT_GID = 10000
 
-# Include common Makefile
-include ../../scripts/common.mk
-
 # Additional Nextcloud directories and files
 TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json
-$(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json:
+$(TARGET_CHROOT)/etc/quadlets/nextcloud/collabora-seccomp-profile.json: $(TARGET_CHROOT)/etc/quadlets/nextcloud
 	curl -sSfL -o $@ https://raw.githubusercontent.com/CollaboraOnline/online/refs/heads/main/docker/cool-seccomp-profile.json
+
+# Include common Makefile
+include ../../scripts/common.mk
 
 .PHONY: test test-set-nextcloud-major
 

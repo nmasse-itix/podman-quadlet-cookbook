@@ -2,8 +2,8 @@
 # Copy this file to /etc/quadlets/quay/app/config.yaml and customize it.
 #
 # For more information on configuration options, see:
-# - the json schema of the config tool: https://github.com/quay/app/blob/master/config-tool/utils/generate/schema.json
-# - the json schema of the Python core: https://github.com/quay/app/blob/master/util/config/schema.py
+# - the json schema of the config tool: https://github.com/quay/quay/blob/master/config-tool/utils/generate/schema.json
+# - the json schema of the Python core: https://github.com/quay/quay/blob/master/util/config/schema.py
 
 # The URL at which Quay is accessible, without the scheme.
 SERVER_HOSTNAME: localhost

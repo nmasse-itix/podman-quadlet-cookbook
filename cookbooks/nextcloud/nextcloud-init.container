@@ -1,9 +1,9 @@
 [Unit]
 Description=Nextcloud Application - Initialization
 Documentation=https://hub.docker.com/_/nextcloud/
-After=network.target nextcloud-redis.service postgresql-server.service var-lib-virtiofs-data.mount
+After=network.target redis-server.service postgresql-server.service var-lib-virtiofs-data.mount
 Before=nextcloud-app.service
-Requires=nextcloud-redis.service postgresql-server.service var-lib-virtiofs-data.mount
+Requires=redis-server.service postgresql-server.service var-lib-virtiofs-data.mount
 
 # Only start if Nextcloud has been configured
 ConditionPathExists=/etc/quadlets/nextcloud/config.env
