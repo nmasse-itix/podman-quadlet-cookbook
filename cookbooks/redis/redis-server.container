@@ -1,0 +1,59 @@
+[Unit]
+Description=Redis
+Documentation=https://hub.docker.com/_/redis/
+After=network.target
+RequiresMountsFor=/var/lib/virtiofs/data
+
+# Start/stop this unit when the target is started/stopped
+PartOf=redis.target
+
+# Only start if Redis has been configured
+ConditionPathExists=/etc/quadlets/redis/redis.conf
+
+[Container]
+ContainerName=redis-server
+Image=redis-server.image
+
+# Network configuration
+Network=host
+
+# Redis configuration
+Exec=redis-server /usr/local/etc/redis/redis.conf
+
+# No need for root privileges
+User=redis
+Group=redis
+
+# UID/GID mapping to map the redis user (999) & group (1000) inside the container to host UID 10021 / GID 10000
+UIDMap=0:1000000:65535
+UIDMap=+999:10021:1
+GIDMap=0:1000000:65535
+GIDMap=+1000:10000:1
+
+# Volume mounts for data persistence and configuration
+Volume=/var/lib/virtiofs/data/redis:/data:Z
+Volume=/etc/quadlets/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro,Z
+Volume=/etc/quadlets/redis/users.acl:/usr/local/etc/redis/users.acl:ro,Z
+
+# Password for the "probe" user for health checks
+Environment=REDISCLI_AUTH=probe
+
+# Health check
+HealthCmd=redis-cli --user probe ping | grep -qFx PONG
+HealthInterval=30s
+HealthTimeout=5s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# Concatenate all ACL fragments into a single users.acl before starting
+Environment=REDIS_UID=10021 REDIS_GID=10000
+ExecStartPre=/etc/quadlets/redis/generate-acl.sh
+
+[Install]
+WantedBy=redis.target

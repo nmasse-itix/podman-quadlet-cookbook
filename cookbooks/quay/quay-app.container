@@ -1,8 +1,8 @@
 [Unit]
 Description=Quay Container Registry Application
 Documentation=https://docs.projectquay.io/
-After=network.target quay-redis.service quay-init-certificate.service var-lib-virtiofs-data.mount
-Requires=quay-redis.service quay-init-certificate.service var-lib-virtiofs-data.mount
+After=network.target redis-server.service quay-init-certificate.service var-lib-virtiofs-data.mount
+Requires=redis-server.service quay-init-certificate.service var-lib-virtiofs-data.mount
 
 # Only start if Quay has been configured
 ConditionPathExists=/etc/quadlets/quay/app/config.yaml

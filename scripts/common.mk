@@ -111,10 +111,10 @@ TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)
 TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
 
 # Example quadlet and systemd drop-ins files
-EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d examples ]; then find examples -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
-EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell if [ -d examples ]; then find examples -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null; fi)
-TARGET_EXAMPLES_QUADLET_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/containers/systemd/%, $(EXAMPLES_QUADLET_DROPINS_FILES))
-TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst examples/%, $(TARGET_CHROOT)/etc/systemd/system/%, $(EXAMPLES_SYSTEMD_DROPINS_FILES))
+EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
+EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null; fi)
+TARGET_EXAMPLES_QUADLET_DROPINS_FILES = $(patsubst dropins/%, $(TARGET_CHROOT)/etc/containers/systemd/%, $(EXAMPLES_QUADLET_DROPINS_FILES))
+TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst dropins/%, $(TARGET_CHROOT)/etc/systemd/system/%, $(EXAMPLES_SYSTEMD_DROPINS_FILES))
 
 # All configuration files to be installed
 TARGET_FILES += $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
@@ -198,7 +198,11 @@ $(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	if [ -d $< ]; then \
 		run install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@; \
 	else \
-		if [ -x $< ]; then \
+		path="$<"; \
+		extension="$${path##*.}"; \
+		if [ "$$extension" == "sh" ] && [ -x "$<" ]; then \
+			run install -m 0755 -o root -g root $< $@; \
+		elif [ -x $< ]; then \
 			run install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 		else \
 			run install -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
@@ -210,8 +214,8 @@ $(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
 	install -m 0600 -o root -g root -D $< $@
 
 # Copy systemd and quadlet drop-ins files
-$(TARGET_EXAMPLES_QUADLET_DROPINS_FILES): $(TARGET_CHROOT)/etc/containers/systemd/%: examples/% $(TARGET_CHROOT)/etc/containers/systemd
-$(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES): $(TARGET_CHROOT)/etc/systemd/system/%: examples/% $(TARGET_CHROOT)/etc/systemd/system
+$(TARGET_EXAMPLES_QUADLET_DROPINS_FILES): $(TARGET_CHROOT)/etc/containers/systemd/%: dropins/% $(TARGET_CHROOT)/etc/containers/systemd
+$(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES): $(TARGET_CHROOT)/etc/systemd/system/%: dropins/% $(TARGET_CHROOT)/etc/systemd/system
 $(TARGET_EXAMPLES_QUADLET_DROPINS_FILES) $(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES):
 	install -D -m 0644 -o root -g root $< $@
 

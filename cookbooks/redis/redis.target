@@ -1,0 +1,13 @@
+[Unit]
+Description=Redis Service Target
+Documentation=man:systemd.target(5)
+Requires=redis-server.service
+After=redis-server.service
+
+AllowIsolate=yes
+
+# Only start if Redis has been configured
+ConditionPathExists=/etc/quadlets/redis/redis.conf
+
+[Install]
+WantedBy=multi-user.target

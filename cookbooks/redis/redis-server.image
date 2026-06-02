@@ -1,0 +1,9 @@
+[Unit]
+Description=podman pull docker.io/library/redis
+Documentation=https://hub.docker.com/_/redis/
+
+# Only start if Redis has been configured
+ConditionPathExists=/etc/quadlets/redis/redis.conf
+
+[Image]
+Image=docker.io/library/redis:8-alpine
