@@ -112,7 +112,7 @@ And use the following command to login and store credentials in `~/.config/conta
 REGISTRY_AUTH_FILE=~/.config/containers/auth.json podman login -u quayadmin -p 'ChangeMe!' https://quay.example.test
 ```
 
-> ![warning]
+> [!WARNING]
 > If you enable persistent storage for the credentials, it is safer to generate a read-only robot account in Quay for pulling images from the mirror, and restrict the scope of the credentials to just the mirror repository. This way, if the credentials are leaked, the damage is limited. And if you need to access other parts of the registry read-write, you can login with a regular user account.
 > 
 > ```
