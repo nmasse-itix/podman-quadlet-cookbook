@@ -69,8 +69,23 @@ FEATURE_USER_INITIALIZE: true
 SUPER_USERS:
   - quayadmin
 
+# Enable permanent sessions
+FEATURE_PERMANENT_SESSIONS: true
+
+# Session duration for users, in seconds. Defaults to 2592000 (30 days)
+PERMANENT_SESSION_LIFETIME: 2592000
+
+# The length of time after which a user must re-authenticate, even with a valid session. Defaults to 5m.
+FRESH_LOGIN_TIMEOUT: "12h"
+
+# Podman/docker session duration
+APP_SPECIFIC_TOKEN_EXPIRATION: 604800
+
 # Mark initial setup as complete
 SETUP_COMPLETE: true
+
+# Mark testing phase as complete
+TESTING: false
 
 # Enable the new UI
 FEATURE_UI_V2: true
