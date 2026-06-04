@@ -23,3 +23,12 @@ providers:
   file:
     directory: /etc/traefik/conf.d/
     watch: true
+
+# certificatesResolvers:
+#   le:
+#     acme:
+#       email: "foo@example.test"
+#       keyType: "EC384"
+#       httpChallenge:
+#         entryPoint: http
+#       storage: "/var/lib/traefik/acme.json"
