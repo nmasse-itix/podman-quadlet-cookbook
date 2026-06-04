@@ -1,0 +1,9 @@
+[Unit]
+Description=podman pull docker.io/binwiederhier/ntfy
+Documentation=https://docs.ntfy.sh/
+
+# Only start if ntfy has been configured
+ConditionPathExists=/etc/quadlets/ntfy/server.yml
+
+[Image]
+Image=docker.io/binwiederhier/ntfy:v2

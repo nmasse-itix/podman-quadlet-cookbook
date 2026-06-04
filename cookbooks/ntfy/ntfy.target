@@ -1,0 +1,13 @@
+[Unit]
+Description=ntfy Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target ntfy.service
+After=postgresql.target ntfy.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if ntfy has been configured
+ConditionPathExists=/etc/quadlets/ntfy/server.yml
+
+[Install]
+WantedBy=multi-user.target

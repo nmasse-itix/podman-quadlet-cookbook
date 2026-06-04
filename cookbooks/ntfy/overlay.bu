@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: ntfy
+    uid: 10027
+    gecos: ntfy
+    home_dir: /var/lib/quadlets/ntfy
+    primary_group: itix-svc

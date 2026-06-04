@@ -1,0 +1,29 @@
+# Server
+base-url: "http://ntfy/"
+behind-proxy: true
+listen-http: "127.0.0.1:8080"
+
+# Database
+database-url: "postgres://ntfy:ntfy@localhost/ntfy?sslmode=disable"
+
+# Access control
+auth-default-access: "deny-all"
+auth-users:
+  # fields are: login:bcrypt-hashed-password:role (admin or user)
+  # the following bcrypt hash has been generated with:
+  # echo -ne "admin\nadmin" | podman run -i --rm docker.io/binwiederhier/ntfy:v2 user hash
+  - "admin:$2a$10$9t74/X77vkvZJ.ZEBOd1aukjxwl5xk7FVtI99ywQ8rdqjPJiY9fHm:admin"
+enable-login: true
+require-login: true
+
+# Attachments (stored on virtiofs)
+attachment-cache-dir: "/var/cache/ntfy/attachments"
+attachment-file-size-limit: "100M"
+attachment-total-size-limit: "50G"
+attachment-expiry-duration: "48h"
+
+# Message cache
+cache-duration: "48h"
+
+# Upstream (for iOS push notifications)
+upstream-base-url: "https://ntfy.sh"

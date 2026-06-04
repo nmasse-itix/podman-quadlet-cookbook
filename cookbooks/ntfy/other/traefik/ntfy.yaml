@@ -1,0 +1,12 @@
+http:
+  routers:
+    ntfy:
+      rule: "Host(`ntfy`)"
+      entryPoints:
+      - http
+      service: "ntfy"
+  services:
+    ntfy:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"
