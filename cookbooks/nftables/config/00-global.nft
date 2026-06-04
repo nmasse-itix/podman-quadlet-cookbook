@@ -4,7 +4,7 @@ flush ruleset
 
 table inet itix-fw {
     chain input {
-        type filter hook input priority filter + 20
+        type filter hook input priority filter
         policy drop
 
         ct state invalid counter drop
@@ -15,7 +15,7 @@ table inet itix-fw {
     }
 
     chain output {
-        type filter hook output priority filter + 20
+        type filter hook output priority filter
         policy drop
 
         ct state invalid counter drop
@@ -26,7 +26,7 @@ table inet itix-fw {
     }
 
     chain forward {
-        type filter hook forward priority filter + 20
+        type filter hook forward priority filter
         policy drop
 
         # Loopback
@@ -36,11 +36,15 @@ table inet itix-fw {
 
 table inet itix-nat {
     chain prerouting {
-        type nat hook prerouting priority dstnat + 20
+        type nat hook prerouting priority dstnat
         policy accept
     }
     chain postrouting {
-        type nat hook postrouting priority srcnat + 20
+        type nat hook postrouting priority srcnat
+        policy accept
+    }
+    chain output {
+        type nat hook output priority dstnat
         policy accept
     }
 }
