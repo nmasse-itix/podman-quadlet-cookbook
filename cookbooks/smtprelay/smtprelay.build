@@ -1,0 +1,10 @@
+[Unit]
+Description=Build of the smtprelay MTA
+Wants=network-online.target
+After=network-online.target centos-stream10-image.service
+Requires=centos-stream10-image.service
+
+[Build]
+File=/etc/quadlets/smtprelay/container/Containerfile
+ImageTag=localhost/smtprelay:latest
+SetWorkingDirectory=/etc/quadlets/smtprelay/container

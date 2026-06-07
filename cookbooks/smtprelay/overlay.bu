@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: smtprelay
+    uid: 10030
+    gecos: smtprelay MTA
+    home_dir: /var/lib/quadlets/smtprelay
+    primary_group: itix-svc

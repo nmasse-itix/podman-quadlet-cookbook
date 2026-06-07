@@ -1,0 +1,11 @@
+[Unit]
+Description=smtprelay Service Target
+Documentation=man:systemd.target(5)
+Requires=smtprelay.service smtprelay-build.timer
+After=smtprelay.service smtprelay-build.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

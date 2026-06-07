@@ -1,0 +1,49 @@
+[Unit]
+Description=smtprelay MTA
+Documentation=https://github.com/decke/smtprelay
+After=local-fs.target network.target smtprelay-build.service lego.target
+Wants=smtprelay-build.service lego.target
+
+# Only start if the main configuration file exists
+ConditionPathExists=/etc/quadlets/smtprelay/smtprelay.ini
+
+# Stop when the target is stopped
+PartOf=smtprelay.target
+
+[Container]
+ContainerName=smtprelay
+
+# Image
+Image=localhost/smtprelay:latest
+AutoUpdate=local
+
+# Security - run directly as a dedicated, unprivileged UID/GID (no mapping)
+User=10030
+Group=10000
+
+# Port 587 is a privileged port (< 1024); grant the capability to bind to it
+AddCapability=CAP_NET_BIND_SERVICE
+
+# Command and arguments
+Entrypoint=/usr/local/bin/smtprelay
+Exec=--config /etc/smtprelay/smtprelay.ini -logfile=/dev/stdout
+
+# Storage
+Volume=/etc/quadlets/smtprelay/smtprelay.ini:/etc/smtprelay/smtprelay.ini:ro,Z
+Volume=/etc/quadlets/smtprelay/allowed_users.txt:/etc/smtprelay/allowed_users.txt:ro,Z
+Volume=/run/quadlets/smtprelay/tls:/etc/smtprelay/tls:Z
+
+# Network
+Network=host
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Get the TLS certificates in place before starting smtprelay
+ExecStartPre=/bin/sh -c 'install -o 10030 -g 10000 -m 0600 -t /run/quadlets/smtprelay/tls /var/lib/quadlets/lego/certificates/*.crt /var/lib/quadlets/lego/certificates/*.key'
+
+[Install]
+WantedBy=smtprelay.target

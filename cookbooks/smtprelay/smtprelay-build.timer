@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the smtprelay container image
+PartOf=smtprelay.target
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=smtprelay.target

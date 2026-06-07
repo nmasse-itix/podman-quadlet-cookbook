@@ -1,0 +1,22 @@
+FROM quay.io/centos/centos:stream10 AS builder
+
+# Tools needed to fetch and unpack the smtprelay release
+RUN dnf install -y curl jq tar gzip \
+ && dnf clean all
+
+COPY install-smtprelay.sh /
+RUN /install-smtprelay.sh
+
+FROM quay.io/centos/centos:stream10
+
+# CA certificates are required to establish TLS connections to the relay host
+RUN dnf install -y ca-certificates \
+ && dnf clean all
+
+COPY --from=builder /usr/local/bin/smtprelay /usr/local/bin/smtprelay
+
+# Submission port
+EXPOSE 587
+
+ENTRYPOINT [ "/usr/local/bin/smtprelay" ]
+CMD [ "--config", "/etc/smtprelay/smtprelay.ini", "-logfile=/dev/stdout" ]

@@ -1,0 +1,16 @@
+# File which contains username and password used for authentication
+# before clients can relay mail through this server.
+#
+# Format (one user per line, fields separated by spaces):
+#   username bcrypt-hash [email[,email[,...]]]
+#
+#   username:    the SMTP auth username
+#   bcrypt-hash: the bcrypt hash of the password
+#   email:       comma-separated list of "from" addresses the user is
+#                allowed to send as (omit to allow any address)
+#
+# Generate the bcrypt hash of a password with:
+#   python3 -c "import bcrypt; print(bcrypt.hashpw(b'<password>', bcrypt.gensalt()).decode())"
+#
+# Example user "demo" (password "changeme") allowed to send from any address:
+demo $2b$12$V3XmeosOSoI4B.2D8HLzWu7y2YQaoBeF2unnGopZ2ZJJpQ58sKToa
