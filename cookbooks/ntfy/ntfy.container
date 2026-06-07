@@ -30,7 +30,7 @@ Volume=/etc/quadlets/ntfy/server.yml:/etc/ntfy/server.yml:ro,z
 Volume=/var/lib/virtiofs/data/ntfy:/var/cache/ntfy:Z
 
 # Health check
-HealthCmd=wget -q --tries=1 http://localhost:8080/v1/health -O - | grep -Eo '"healthy"\s*:\s*true' || exit 1
+HealthCmd=wget -q --tries=1 http://127.0.0.1:8080/v1/health -O - | grep -qEo '"healthy"\s*:\s*true'
 HealthInterval=60s
 HealthTimeout=10s
 HealthStartPeriod=40s
