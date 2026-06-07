@@ -1,7 +1,8 @@
 [Unit]
 Description=Build of the Samba daemon
 Wants=network-online.target
-After=network-online.target
+After=network-online.target centos-stream10-image.service
+Requires=centos-stream10-image.service
 
 [Build]
 File=/etc/quadlets/samba/container/Containerfile
