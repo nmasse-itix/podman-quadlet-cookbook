@@ -1,0 +1,6 @@
+[Unit]
+Description=Pull quay.io/centos/centos:stream10
+Documentation=https://quay.io/centos/centos
+
+[Image]
+Image=quay.io/centos/centos:stream10
