@@ -1,0 +1,16 @@
+[Unit]
+Description=Discover the virtiofs tags made available by the hypervisor
+RequiresMountsFor=/run
+ConditionPathIsMountPoint=/run
+
+# Unless DefaultDependencies= is set to false, service units will implicitly
+# have dependencies of type Requires= and After= on basic.target as well as
+# dependencies of type Conflicts= and Before= on shutdown.target.
+#
+# So, we need to set DefaultDependencies to "no" to break the ordering cycle.
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -Eeuo pipefail -c 'shopt -s nullglob; mkdir -p /run/quadlets/base/virtiofs; for tagfile in /sys/fs/virtiofs/*/tag; do tag=$(<"$tagfile"); echo -n > "/run/quadlets/base/virtiofs/$tag"; done'
+RemainAfterExit=yes

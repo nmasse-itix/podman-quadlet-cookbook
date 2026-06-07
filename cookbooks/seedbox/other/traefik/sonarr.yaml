@@ -3,12 +3,9 @@ http:
     sonarr:
       rule: "Host(`sonarr`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "sonarr"
-      #tls:
-      #  certResolver: le
   services:
     sonarr:
       loadBalancer:

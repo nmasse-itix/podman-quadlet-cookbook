@@ -1,0 +1,16 @@
+[Unit]
+Description=Mount the "ssd" virtio filesystem
+Requires=discover-virtiofs-tags.service
+After=discover-virtiofs-tags.service
+
+# Only run if the "ssd" tag is present (as discovered by discover-virtiofs-tags.service)
+ConditionPathExists=/run/quadlets/base/virtiofs/ssd
+
+[Mount]
+What=ssd
+Where=/var/lib/virtiofs/ssd
+Type=virtiofs
+Options=context=system_u:object_r:container_file_t:s0
+
+[Install]
+WantedBy=local-fs.target

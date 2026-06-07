@@ -1,9 +1,10 @@
 [Unit]
 Description=Mount the "data" virtio filesystem
+Requires=discover-virtiofs-tags.service
+After=discover-virtiofs-tags.service
 
-# Only run on Fedora CoreOS
-ConditionOSRelease=ID=fedora
-ConditionOSRelease=VARIANT_ID=coreos
+# Only run if the "data" tag is present (as discovered by discover-virtiofs-tags.service)
+ConditionPathExists=/run/quadlets/base/virtiofs/data
 
 [Mount]
 What=data

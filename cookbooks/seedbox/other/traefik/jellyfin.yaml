@@ -3,12 +3,9 @@ http:
     jellyfin:
       rule: "Host(`jellyfin`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "jellyfin"
-      #tls:
-      #  certResolver: le
   services:
     jellyfin:
       loadBalancer:

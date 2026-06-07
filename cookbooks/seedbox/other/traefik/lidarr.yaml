@@ -3,12 +3,9 @@ http:
     lidarr:
       rule: "Host(`lidarr`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "lidarr"
-      #tls:
-      #  certResolver: le
   services:
     lidarr:
       loadBalancer:

@@ -3,12 +3,9 @@ http:
     qbittorrent-webui:
       rule: "Host(`qbittorrent`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "qbittorrent-webui"
-      #tls:
-      #  certResolver: le
   services:
     qbittorrent-webui:
       loadBalancer:

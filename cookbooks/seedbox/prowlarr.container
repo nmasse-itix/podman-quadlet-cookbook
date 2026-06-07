@@ -1,10 +1,10 @@
 [Unit]
 Description=Prowlarr is an indexer manager/proxy built on the popular *arr .net/reactjs base stack to integrate with your various PVR apps.
 Documentation=https://docs.linuxserver.io/images/docker-prowlarr/
-Wants=network-online.target
-After=network-online.target
-RequiresMountsFor=/var/lib/virtiofs/data
-ConditionPathIsMountPoint=/var/lib/virtiofs/data
+Wants=network.target
+After=network.target
+RequiresMountsFor=/var/lib/virtiofs/ssd
+RequiresMountsFor=/var/lib/virtiofs/hdd
 
 [Container]
 ContainerName=prowlarr
@@ -18,8 +18,8 @@ User=10017
 Group=10000
 
 # Storage
-Volume=/var/lib/virtiofs/data/prowlarr/config:/config:z
-Volume=/var/lib/virtiofs/data/storage:/data:z
+Volume=/var/lib/virtiofs/ssd/prowlarr/config:/config:z
+Volume=/var/lib/virtiofs/hdd:/data:z
 
 # Network
 AddCapability=CAP_NET_BIND_SERVICE

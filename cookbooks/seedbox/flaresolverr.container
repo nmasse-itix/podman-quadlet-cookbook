@@ -1,8 +1,8 @@
 [Unit]
 Description=Proxy server to bypass Cloudflare protection
 Documentation=https://github.com/FlareSolverr/FlareSolverr/
-Wants=network-online.target
-After=network-online.target
+Wants=network.target
+After=network.target
 
 [Container]
 ContainerName=flaresolverr

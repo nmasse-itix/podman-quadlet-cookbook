@@ -3,12 +3,9 @@ http:
     prowlarr:
       rule: "Host(`prowlarr`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "prowlarr"
-      #tls:
-      #  certResolver: le
   services:
     prowlarr:
       loadBalancer:

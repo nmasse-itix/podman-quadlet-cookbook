@@ -1,0 +1,13 @@
+http:
+  routers:
+    cross-seed:
+      rule: "Host(`cross-seed`)"
+      entryPoints:
+      - http
+      middlewares:
+      service: "cross-seed"
+  services:
+    cross-seed:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:2468"

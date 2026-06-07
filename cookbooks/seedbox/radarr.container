@@ -1,10 +1,10 @@
 [Unit]
 Description=Radarr is a movie collection manager for Usenet and BitTorrent users.
 Documentation=https://docs.linuxserver.io/images/docker-radarr/
-Wants=network-online.target
-After=network-online.target
-RequiresMountsFor=/var/lib/virtiofs/data
-ConditionPathIsMountPoint=/var/lib/virtiofs/data
+Wants=network.target
+After=network.target
+RequiresMountsFor=/var/lib/virtiofs/ssd
+RequiresMountsFor=/var/lib/virtiofs/hdd
 
 [Container]
 ContainerName=radarr
@@ -18,8 +18,8 @@ User=10017
 Group=10000
 
 # Storage
-Volume=/var/lib/virtiofs/data/radarr/config:/config:z
-Volume=/var/lib/virtiofs/data/storage:/data:z
+Volume=/var/lib/virtiofs/ssd/radarr/config:/config:z
+Volume=/var/lib/virtiofs/hdd:/data:z
 
 # Network
 AddCapability=CAP_NET_BIND_SERVICE

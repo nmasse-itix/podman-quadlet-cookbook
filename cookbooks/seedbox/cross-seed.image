@@ -1,0 +1,6 @@
+[Unit]
+Description=podman pull ghcr.io/cross-seed/cross-seed
+Documentation=https://www.cross-seed.org/docs/basics/getting-started
+
+[Image]
+Image=ghcr.io/cross-seed/cross-seed:latest

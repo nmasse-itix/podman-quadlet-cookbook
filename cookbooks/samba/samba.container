@@ -1,8 +1,7 @@
 [Unit]
 Description=Samba
-After=samba-build.service
-Wants=samba-build.service
-Requires=var-lib-virtiofs-data.mount
+After=network.target samba-build.service
+Wants=network.target samba-build.service
 
 # Start/stop this unit when the target is started/stopped
 PartOf=samba.target
@@ -23,11 +22,11 @@ User=0
 # Storage
 Volume=/var/lib/quadlets/samba/data:/var/lib/samba:Z
 Volume=/var/lib/quadlets/samba/log:/var/log/samba:Z
-Volume=/var/lib/virtiofs/data/storage:/data
 Volume=/etc/quadlets/samba/smb.conf.d:/etc/samba/smb.conf.d:Z
 Volume=/run/quadlets/samba/passwd:/etc/passwd:Z
 Volume=/run/quadlets/samba/group:/etc/group:Z
 Volume=/run/quadlets/samba/shadow:/etc/shadow:Z
+# Heads up ! You need to mount the volumes you want to share in a drop-in configuration file !
 
 # Network
 Network=host

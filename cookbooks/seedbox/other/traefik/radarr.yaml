@@ -3,12 +3,9 @@ http:
     radarr:
       rule: "Host(`radarr`)"
       entryPoints:
-      #- https
       - http
       middlewares:
       service: "radarr"
-      #tls:
-      #  certResolver: le
   services:
     radarr:
       loadBalancer:
