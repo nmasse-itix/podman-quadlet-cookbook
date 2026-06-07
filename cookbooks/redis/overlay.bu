@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: redis
+    uid: 10021
+    gecos: Redis server
+    home_dir: /var/lib/quadlets/redis
+    primary_group: itix-svc
