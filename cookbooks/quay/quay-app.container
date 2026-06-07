@@ -1,8 +1,8 @@
 [Unit]
 Description=Quay Container Registry Application
 Documentation=https://docs.projectquay.io/
-After=network.target redis-server.service quay-init-certificate.service var-lib-virtiofs-data.mount
-Requires=redis-server.service quay-init-certificate.service var-lib-virtiofs-data.mount
+After=network.target redis-server.service var-lib-virtiofs-data.mount
+Requires=redis-server.service var-lib-virtiofs-data.mount
 
 # Only start if Quay has been configured
 ConditionPathExists=/etc/quadlets/quay/app/config.yaml
@@ -32,6 +32,8 @@ Volume=/var/lib/virtiofs/data/quay/storage:/datastorage:Z
 
 # Configuration
 Volume=/etc/quadlets/quay/app:/quay-registry/conf/stack:Z,ro
+Volume=/run/quadlets/quay/tls/ssl.cert:/quay-registry/conf/stack/ssl.cert:Z,ro
+Volume=/run/quadlets/quay/tls/ssl.key:/quay-registry/conf/stack/ssl.key:Z,ro
 
 # Health check
 HealthCmd=curl -sk https://localhost:8443/health/instance
@@ -45,6 +47,9 @@ Restart=always
 RestartSec=10
 TimeoutStartSec=120
 TimeoutStopSec=30
+
+# Load TLS certificates from Lego before starting the container
+ExecStartPre=/etc/quadlets/quay/quay_load_tls_certs.sh
 
 # Wait for PostgreSQL to be ready on localhost
 ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'

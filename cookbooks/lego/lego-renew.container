@@ -27,7 +27,7 @@ EnvironmentFile=/etc/quadlets/lego/config.env
 
 # Volume mounts
 Volume=/var/lib/quadlets/lego:/.lego:z
-Volume=/etc/quadlets/lego/hooks:/etc/lego/hooks:ro
+Volume=/etc/quadlets/lego/renew-hook:/etc/lego/renew-hook:ro
 
 # Be safe, set the umask to 0077 so that private keys are not world-readable
 PodmanArgs=--umask=0077

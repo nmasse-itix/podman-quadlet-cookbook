@@ -1,8 +1,8 @@
 [Unit]
 Description=Quay Container Registry Target
 Documentation=https://docs.projectquay.io/
-Requires=postgresql.target redis.target quay-clair.service quay-app.service quay-init-certificate.service
-After=postgresql.target redis.target quay-clair.service quay-app.service quay-init-certificate.service
+Requires=postgresql.target redis.target lego.target quay-clair.service quay-app.service
+After=postgresql.target redis.target lego.target quay-clair.service quay-app.service
 
 # Allow isolation - can stop/start this target independently
 AllowIsolate=yes

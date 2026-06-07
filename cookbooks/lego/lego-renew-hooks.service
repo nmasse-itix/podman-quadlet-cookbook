@@ -1,0 +1,12 @@
+[Unit]
+Description=Process Lego certificate renewal hooks
+# Lego touches .renewed files when renewed certificates are available
+ConditionPathExistsGlob=/var/lib/quadlets/lego/certificates/*.renewed
+After=lego-renew.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/quadlets/lego/process-hooks.sh
+
+[Install]
+WantedBy=lego-renew.service
