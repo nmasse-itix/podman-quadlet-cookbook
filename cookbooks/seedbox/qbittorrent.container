@@ -27,8 +27,15 @@ Network=host
 
 # Configuration
 Environment=PUID=10017 PGID=10000 TZ=Etc/UTC WEBUI_PORT=8080
-Entrypoint=/usr/bin/qbittorrent-nox
+Entrypoint=/app/qbittorrent-nox
 Exec=--webui-port=8080
+
+# Health check
+HealthCmd=curl -f http://127.0.0.1:8096/health
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
 
 [Install]
 WantedBy=seedbox.target

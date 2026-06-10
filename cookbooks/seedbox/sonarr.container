@@ -27,10 +27,16 @@ Network=host
 
 # Configuration
 Environment=PUID=10017 PGID=10000 TZ=Etc/UTC HOME=/config TMPDIR=/config/tmp
-
 Entrypoint=/app/sonarr/bin/Sonarr
 Exec=-nobrowser -data=/config
 WorkingDir=/app/sonarr/bin
+
+# Health check
+HealthCmd=curl -f http://127.0.0.1:8989/ping
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
 
 [Install]
 WantedBy=seedbox.target

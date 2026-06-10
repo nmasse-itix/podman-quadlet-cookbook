@@ -30,5 +30,12 @@ Environment=PUID=10017 PGID=10000 JELLYFIN_DATA_DIR=/config/data JELLYFIN_CONFIG
 Entrypoint=/usr/bin/jellyfin
 Exec=--ffmpeg=/usr/lib/jellyfin-ffmpeg/ffmpeg
 
+# Health check
+HealthCmd=curl -f http://127.0.0.1:8096/health
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
 [Install]
 WantedBy=seedbox.target

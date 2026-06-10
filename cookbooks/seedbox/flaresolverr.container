@@ -23,5 +23,12 @@ Network=host
 # Configuration
 Environment=LOG_LEVEL=debug TZ=Europe/Paris HOST=127.0.0.1 PROMETHEUS_ENABLED=true PROMETHEUS_PORT=8192 LANG=fr_FR
 
+# Health check
+HealthCmd=curl -f http://127.0.0.1:8191/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=300s
+HealthRetries=3
+
 [Install]
 WantedBy=seedbox.target

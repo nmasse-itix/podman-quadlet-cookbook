@@ -31,5 +31,12 @@ Entrypoint=/app/lidarr/bin/Lidarr
 Exec=-nobrowser -data=/config
 WorkingDir=/app/lidarr/bin
 
+# Health check
+HealthCmd=curl -f http://127.0.0.1:8686/ping 
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
 [Install]
 WantedBy=seedbox.target

@@ -80,7 +80,7 @@
             "type": "disk",
             "format": "{size-percentage-bar} {size-percentage>4}",
             "key": "Vol. {mountpoint}",
-            "folders": "/var:/var/lib/virtiofs/data",
+            "folders": "/var:/var/lib/virtiofs/data:/var/lib/virtiofs/ssd:/var/lib/virtiofs/hdd",
             "percent": {
                 "green": 75,
                 "yellow": 90

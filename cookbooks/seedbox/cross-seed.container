@@ -29,5 +29,12 @@ Network=host
 Environment=TZ=Etc/UTC HOME=/config
 Exec=daemon
 
+# Health check
+HealthCmd=curl -f http://127.0.0.1:2468/api/ping
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=10s
+HealthRetries=3
+
 [Install]
 WantedBy=seedbox.target

@@ -34,5 +34,16 @@ Network=host
 # Samba debug level
 Exec=--debuglevel=1
 
+# Health check
+HealthCmd=smbclient -t 3 -N -L //127.0.0.1
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
+[Service]
+# The /etc/shadow file cannot be copied by systemd-tmpfiles (because of SELinux) so we need to copy it before starting the container
+ExecStartPre=/bin/cp /etc/shadow /run/quadlets/samba/shadow
+
 [Install]
 WantedBy=samba.target
