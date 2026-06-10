@@ -1,0 +1,14 @@
+[Unit]
+Description=Install tools
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/etc/quadlets/base/install-tools.env
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/quadlets/base/install-tools.sh
+EnvironmentFile=/etc/quadlets/base/install-tools.env
+
+[Install]
+WantedBy=multi-user.target
