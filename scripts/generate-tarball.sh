@@ -9,7 +9,8 @@
 # The tool takes its parameters from the environment variables defined in the Makefile:
 #
 # - PROJECT_NAME: the name of the project.
-# - ALL_DEPS: the list of all (direct and transitive) dependencies of the project.
+# - ALL_DEPENDENCIES: the list of all (direct and transitive) dependencies of the project.
+# - DIRECT_DEPENDENCIES: the list of all direct dependencies of the project.
 # - TARGET_CHROOT: the target chroot directory containing the files to be included in the tarball.
 # - BUTANE_BLOCKLIST: the path to a file containing a list of files and directories (one per line) to ignore
 #                     (i.e., files and directories that are already part of the CoreOS default installation
@@ -52,13 +53,21 @@ metadata_file="$tmp_dir/metadata.yaml"
 cat <<EOF > "$metadata_file"
 name: $PROJECT_NAME
 EOF
-if [ -n "${ALL_DEPS}" ]; then
+if [ -n "${ALL_DEPENDENCIES}" ]; then
   echo "dependencies:" >> "$metadata_file"
-  for dep in ${ALL_DEPS};
+  for dep in ${ALL_DEPENDENCIES};
     do echo "- $dep"
   done >> "$metadata_file"
 else
   echo "dependencies: []" >> "$metadata_file"
+fi
+if [ -n "${DIRECT_DEPENDENCIES}" ]; then
+  echo "direct_dependencies:" >> "$metadata_file"
+  for dep in ${DIRECT_DEPENDENCIES};
+    do echo "- $dep"
+  done >> "$metadata_file"
+else
+  echo "direct_dependencies: []" >> "$metadata_file"
 fi
 if [ "${#files_to_include[@]}" -gt 0 ]; then
   echo "files:" >> "$metadata_file"

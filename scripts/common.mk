@@ -372,6 +372,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_ENABLE_UNITS := $(SYSTEMD_ENABLE_UNITS)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_START_UNITS := $(SYSTEMD_START_UNITS)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_TIMER_NAMES := $(SYSTEMD_TIMER_NAMES)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export DIRECT_DEPENDENCIES := $(DEPENDENCIES)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu &: 
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
@@ -384,7 +385,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 	fi
 	@run() { echo $$*; "$$@"; }; \
 	run mkdir -p build; \
-	export ALL_DEPS="$(shell $(MAKE) -s list-dependencies 2>/dev/null)"; \
+	export ALL_DEPENDENCIES="$(shell $(MAKE) -s list-dependencies 2>/dev/null)"; \
 	set -Eeuo pipefail; \
 	if [ build/$(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ build/$(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
 		for dep in base $(DEPENDENCIES); do \
