@@ -1,8 +1,8 @@
 [Unit]
 Description=multiarch /usr/bin/qemu-*-static
 Documentation=https://github.com/multiarch/qemu-user-static
-Wants=network-online.target
-After=network-online.target
+Wants=network-online.target fedora-image.service
+After=network-online.target fedora-image.service
 
 [Build]
 File=/etc/quadlets/qemu-user-static/container/Containerfile

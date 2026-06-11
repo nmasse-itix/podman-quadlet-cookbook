@@ -1,0 +1,6 @@
+[Unit]
+Description=Pull latest version of the Fedora base image
+Documentation=https://quay.io/fedora/fedora
+
+[Image]
+Image=quay.io/fedora/fedora:44
