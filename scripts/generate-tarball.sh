@@ -27,7 +27,7 @@ tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 
 # Generate the file list from the TARGET_CHROOT, excluding files and directories in the BUTANE_BLOCKLIST
-declare -a files_to_include=()
+declare -A files_to_include=()
 filelist_file="$tmp_dir/filelist.txt"
 for path in $(find "$TARGET_CHROOT"); do
     rel_path="${path#$TARGET_CHROOT}"
@@ -45,7 +45,7 @@ for path in $(find "$TARGET_CHROOT"); do
     echo "${rel_path#/}" >> "$filelist_file"
 
     # Although, the absolute path is stored in the metadata file.
-    files_to_include+=("$rel_path")
+    files_to_include["$rel_path"]="$(stat --format='%u %g %a %F' "$path")"
 done
 
 # Generate metadata.json
@@ -71,8 +71,23 @@ else
 fi
 if [ "${#files_to_include[@]}" -gt 0 ]; then
   echo "files:" >> "$metadata_file"
-  for file in "${files_to_include[@]}"; do
-    echo "- $file"
+  for file in "${!files_to_include[@]}"; do
+    read -r owner group mode type <<< "${files_to_include[$file]}"
+    if [ "$type" == "directory" ]; then
+      type="dir"
+    elif [ "$type" == "regular file" ]; then
+      type="file"
+    else
+      echo "Unsupported file type: $type for file $file"
+      exit 1
+    fi
+    cat <<EOY
+- name: $file
+  owner: $owner
+  group: $group
+  mode: "0$mode"
+  type: $type
+EOY
   done >> "$metadata_file"
 else
   echo "files: []" >> "$metadata_file"
