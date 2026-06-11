@@ -22,6 +22,10 @@
 
 set -Eeuo pipefail
 
+# Avoid issues with translated output of commands like stat.
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
 # Create a temporary directory to store intermediate files (metadata.json and content.tar)
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
