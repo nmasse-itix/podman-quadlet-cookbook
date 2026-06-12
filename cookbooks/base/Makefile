@@ -3,6 +3,8 @@ SYSTEMD_MAIN_UNIT_NAMES := var-lib-virtiofs-data.mount
 SYSTEMD_MAIN_UNIT_NAMES += rpm-ostree-install-qemu-guest-agent.service
 SYSTEMD_MAIN_UNIT_NAMES += install-tools.service
 
+TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/base/install-tools.d
+
 # Include common Makefile
 include ../../scripts/common.mk
 

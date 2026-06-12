@@ -15,7 +15,9 @@
 # - BUTANE_BLOCKLIST: the path to a file containing a list of files and directories (one per line) to ignore
 #                     (i.e., files and directories that are already part of the CoreOS default installation
 #                     or belonging to another package).
-# - SYSTEMD_MAIN_UNIT_NAMES: the list of systemd main unit names to enable.
+# - SYSTEMD_START_UNITS: the list of systemd main unit names to start.
+# - SYSTEMD_ENABLE_UNITS: the list of systemd unit names to enable.
+# - PROJECT_USER: the project's user information (username, uid, gid, home directory).
 #
 # The path to of the output tarball is $1.
 #

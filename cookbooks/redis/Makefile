@@ -6,10 +6,11 @@
 PROJECT_UID = 10021
 PROJECT_GID = 10000
 
+TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/redis/acl.d
+
 # Include common Makefile
 include ../../scripts/common.mk
 
-TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/redis/acl.d
 $(TARGET_CHROOT)/etc/quadlets/redis/acl.d:
 	install -m 0700 -o root -g root -D -d $@
 
