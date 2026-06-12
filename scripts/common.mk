@@ -373,6 +373,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_START_UNITS := $(SYSTEMD_START_UNITS)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export SYSTEMD_TIMER_NAMES := $(SYSTEMD_TIMER_NAMES)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export DIRECT_DEPENDENCIES := $(DEPENDENCIES)
+build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu: export PROJECT_USER := $(PROJECT_NAME) $(PROJECT_UID) $(PROJECT_GID) /var/lib/quadlets/$(PROJECT_NAME)
 build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-examples.bu &: 
 	@if [ -z "$(TARGET_CHROOT)" ]; then \
 		echo "TARGET_CHROOT is not set!"; exit 1; \
