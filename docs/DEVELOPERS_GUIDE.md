@@ -76,7 +76,7 @@ The cookbooks in this repository follow a set of architectural guidelines to ens
   
   Also, to avoid conflicts between cookbooks, it is recommended to use a UID/GID above 10000 for the users of the cookbooks, as the UIDs/GIDs below 10000 are reserved for system users and groups.
 
-  - Any UID > 10000 that is not already used in this repository is fair game for your cookbook, and you can - document the UID/GID you chose in the README file of your cookbook to avoid conflicts with other cookbooks.
+  - Any UID > 10000 that is not already used in this repository is fair game for your cookbook, and you can document the UID/GID you chose in the README file of your cookbook to avoid conflicts with other cookbooks.
   - UID 10000 can be used freely as an equivalent of the `nobody` user for applications that do not need a dedicated user.
   - GID 10000 is the main group for all the users of the cookbooks, so that you can use it to share files between cookbooks if needed.
 
@@ -108,7 +108,7 @@ The cookbooks in this repository follow a set of architectural guidelines to ens
    Use the Remote Explorer extension in Visual Studio Code to connect to your development VM via SSH.
    This allows you to edit files directly on the VM and run commands in the integrated terminal.
 
-   Then, on your host, add the following configuration to your `~/.ssh/config` file:
+   First, on your host, add the following configuration to your `~/.ssh/config` file:
 
    ```
    Host quadlets
@@ -119,7 +119,7 @@ The cookbooks in this repository follow a set of architectural guidelines to ens
          UserKnownHostsFile=/dev/null
    ```
 
-   Finally, install the [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh&ssr=false#overview) extension for Visual Studio Code, and connect to your VM using the "Remote - SSH: Connect to Host..." command.
+   Then, install the [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh&ssr=false#overview) extension for Visual Studio Code, and connect to your VM using the "Remote - SSH: Connect to Host..." command.
 
    If needed, you can also connect to your VM using `ssh root@quadlets` from your terminal or from the libvirt console using `sudo virsh console quadlets` with the login `root` and the password `root`.
 
@@ -279,7 +279,7 @@ This repository follows the principle of "convention over configuration" to simp
   ExecStart=/usr/bin/myapp --new-argument
   ```
 
-  The same example applies for Cookbook files, if you want to override the `Image` of a Cookbook file named `myapp.container`, you can create a file named `dropins/myapp.container.d/override.conf` with the following content:
+  The same example applies for Quadlet files, if you want to override the `Image` of a Quadlet file named `myapp.container`, you can create a file named `dropins/myapp.container.d/override.conf` with the following content:
 
   ```ini
   [Container]
@@ -289,7 +289,7 @@ This repository follows the principle of "convention over configuration" to simp
 - **Examples**: If you want to provide example files for your Cookbook, they are expected to be in an `examples/` directory under the `config`, `tmpfiles.d`, `sysctl.d`, `profile.d` or `dropins` directories inside the Cookbook directory.
 
   They will land to at the same path as their parent directory.
-  For instance `examples/config/foo/bar.conf` will land to `/etc/quadlets/<cookbook-name>/foo/bar.conf` on the target system too.
+  For instance `config/examples/foo/bar.conf` will land to `/etc/quadlets/<cookbook-name>/foo/bar.conf` on the target system too.
 
   Examples are used during the development and testing of your Cookbook to provide your application with a working configuration (not necessarily secure, nor optimized).
   They are not part of the final package, and thus is not deployed to production systems.
