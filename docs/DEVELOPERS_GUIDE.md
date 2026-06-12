@@ -429,25 +429,22 @@ For dependent cookbooks to be able to inject configuration into your cookbook, y
 
 ```Makefile
 # Short comment about the purpose of this hook
-# For instance: "this hook allows dependent cookbooks to inject SQL scripts
-# and shell scripts to initialize the PostgreSQL database for their own needs".
+# For instance: "this hook allows dependent cookbooks to inject SQL scripts and shell scripts to initialize
+# the PostgreSQL database for their own needs".
 
-# Define the target files that will be deployed to the target system when the
-# hook is used by a dependent cookbook.
+# Define the target files that will be deployed to the target system when the hook is used by a dependent cookbook.
 TARGET_POSTGRESQL_FILES = $(patsubst other/postgresql/%, $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/%, $(wildcard other/postgresql/*))
 
-# Inject those files into the example file set (you can also use the "TARGET_FILES"
-# variable instead if you want those files to be part of the final package,
-# but usually they are just examples for the dependent cookbooks to use and thus
-# they are not part of the final package)
+# Inject those files into the example file set (you can also use the "TARGET_FILES" variable instead if you
+# want those files to be part of the final package, but usually they are just examples for the dependent
+# cookbooks to use and thus they are not part of the final package)
 TARGET_EXAMPLE_FILES += $(TARGET_POSTGRESQL_FILES)
 
 # Define the installation rules for the target files
-# Here .sql files and .sh files are deployed with different permissions, but
-# you can adjust the rules as needed for your use case.
-# You can also create sub-directories in your hook directory (other/postgresql
-# in this example) if you have different kinds of hooks that need to be deployed
-# to different locations on the target system.
+# Here .sql files and .sh files are deployed with different permissions, but you can adjust the rules as 
+# needed for your use case. You can also create sub-directories in your hook directory (other/postgresql
+# in this example) if you have different kinds of hooks that need to be deployed to different locations 
+# on the target system.
 $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/%.sql: other/postgresql/%.sql
 	install -m 0600 -o 10004 -g 10000 $< $@
 $(TARGET_CHROOT)/etc/quadlets/postgresql/init.d/%.sh: other/postgresql/%.sh
