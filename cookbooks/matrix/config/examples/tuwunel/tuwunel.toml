@@ -1,0 +1,29 @@
+[global]
+# Network settings
+address = ["127.0.0.1", "::1"]
+ip_source = "rightmost_x_forwarded_for"
+
+# Paths
+database_path = "/var/lib/tuwunel/db"
+database_backup_path = "/var/lib/tuwunel/backup"
+
+# Registration
+allow_registration = true
+grant_admin_to_first_user = true
+
+# Login
+login_via_existing_session = true
+login_via_token = true
+
+# Federation
+allow_federation = false
+
+# Logging
+log = "info"
+log_colors = false
+
+# Media Storage
+[global.storage_provider.media.local]
+base_path = "/var/lib/tuwunel/media"
+delete_empty_directories = true
+startup_check = true

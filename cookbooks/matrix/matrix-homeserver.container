@@ -7,6 +7,7 @@ Before=matrix.target
 
 # Only run if the homeserver has been configured
 ConditionPathExists=/etc/quadlets/matrix/tuwunel.env
+ConditionPathExists=/etc/quadlets/matrix/tuwunel/tuwunel.toml
 
 PartOf=matrix.target
 
@@ -29,6 +30,10 @@ EnvironmentFile=/etc/quadlets/matrix/tuwunel.env
 Volume=/var/lib/quadlets/matrix/tuwunel/db:/var/lib/tuwunel/db:z
 Volume=/var/lib/virtiofs/data/matrix/tuwunel/media:/var/lib/tuwunel/media:z
 Volume=/var/lib/quadlets/matrix/tuwunel/backup-staging:/var/lib/tuwunel/backup:z
+
+# Configuration file (must exist before starting)
+Volume=/etc/quadlets/matrix/tuwunel:/etc/tuwunel:z,ro
+Exec=--config /etc/tuwunel/tuwunel.toml
 
 [Service]
 Restart=always

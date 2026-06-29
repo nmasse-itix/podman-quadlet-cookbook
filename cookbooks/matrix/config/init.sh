@@ -31,7 +31,7 @@ LOGIN_RESPONSE=$(curl -s -X POST \
 ACCESS_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.access_token // empty')
 
 if [ -z "$ACCESS_TOKEN" ]; then
-    echo "Login failed; registering ${ADMIN_USER} (TUWUNEL_GRANT_ADMIN_TO_FIRST_USER=true)..."
+    echo "Login failed; registering ${ADMIN_USER}..."
 
     # Step 1: get the UIAA session ID (server returns 401 with session in body)
     UIAA_RESPONSE=$(curl -s -X POST \
