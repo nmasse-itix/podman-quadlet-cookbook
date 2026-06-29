@@ -4,7 +4,9 @@ Documentation=https://element.io/
 After=local-fs.target network.target
 Before=matrix.target
 
+# Only start if Element Web client has been configured
 ConditionPathExists=/etc/quadlets/matrix/element-web/config.json
+ConditionPathExists=/etc/quadlets/matrix/element-web.env
 
 PartOf=matrix.target
 
@@ -16,8 +18,8 @@ AutoUpdate=registry
 # Network
 Network=host
 
-# Port - must match ELEMENT_WEB_PORT below
-Environment=ELEMENT_WEB_PORT=8080
+# Source configuration into environment variables for the container
+EnvironmentFile=/etc/quadlets/matrix/element-web.env
 
 # Config file (must exist before starting)
 Volume=/etc/quadlets/matrix/element-web/config.json:/app/config.json:z,ro
@@ -30,7 +32,7 @@ GIDMap=0:1000000:65535
 GIDMap=+101:10000:1
 
 # Health check
-HealthCmd=wget -q -O /dev/null http://127.0.0.1:8080/
+HealthCmd=wget -q -O /dev/null http://127.0.0.1:${ELEMENT_WEB_PORT}/
 HealthInterval=30s
 HealthTimeout=10s
 HealthStartPeriod=30s
@@ -41,6 +43,7 @@ Restart=always
 RestartSec=10
 TimeoutStartSec=120
 TimeoutStopSec=30
+EnvironmentFile=/etc/quadlets/matrix/element-web.env
 
 [Install]
 WantedBy=matrix.target
