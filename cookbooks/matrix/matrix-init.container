@@ -1,0 +1,43 @@
+[Unit]
+Description=Matrix Homeserver - First-run initialization
+Documentation=https://matrix-construct.github.io/tuwunel/
+After=local-fs.target network.target matrix-homeserver.service matrix-tools-build.service
+Requires=matrix-homeserver.service
+Wants=matrix-tools-build.service
+
+# Only run if the homeserver has been configured
+ConditionPathExists=/etc/quadlets/matrix/tuwunel.env
+
+# Skip once the backup credentials have been generated
+ConditionPathExists=!/var/lib/virtiofs/data/matrix/tuwunel-backup.env
+
+PartOf=matrix.target
+
+[Container]
+ContainerName=matrix-init-job
+Image=localhost/matrix-tools:latest
+
+User=10031
+Group=10000
+
+Network=host
+
+EnvironmentFile=/etc/quadlets/matrix/tuwunel.env
+
+# Custom initialization script (generates initial admin + backup job credentials)
+Entrypoint=/usr/local/bin/init.sh
+Volume=/etc/quadlets/matrix/init.sh:/usr/local/bin/init.sh:z,ro
+
+# Writable tmpfs output directory (copied to persistent storage by ExecStartPost)
+Volume=/run/quadlets/matrix/matrix-init:/output:z
+
+[Service]
+Restart=no
+TimeoutStartSec=infinity
+Type=oneshot
+
+# Persist the generated credentials to durable storage after the container exits
+ExecStartPost=install -m 600 -o root -g root /run/quadlets/matrix/matrix-init/tuwunel-backup.env /var/lib/virtiofs/data/matrix/tuwunel-backup.env
+
+[Install]
+WantedBy=matrix.target

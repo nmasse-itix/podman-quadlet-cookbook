@@ -1,0 +1,8 @@
+[Unit]
+Description=podman pull ghcr.io/matrix-construct/tuwunel
+Documentation=https://matrix-construct.github.io/tuwunel/
+
+ConditionPathExists=/etc/quadlets/matrix/tuwunel.env
+
+[Image]
+Image=ghcr.io/matrix-construct/tuwunel:latest

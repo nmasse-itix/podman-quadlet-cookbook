@@ -1,0 +1,11 @@
+[Unit]
+Description=Matrix Service Target
+Documentation=man:systemd.target(5)
+Requires=matrix-homeserver.service matrix-web.service matrix-init.service matrix-backup.timer
+After=matrix-homeserver.service matrix-web.service matrix-init.service
+Before=matrix-backup.timer
+
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

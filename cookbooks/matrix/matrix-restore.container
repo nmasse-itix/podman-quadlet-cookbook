@@ -1,0 +1,42 @@
+[Unit]
+Description=Matrix Homeserver - Database Restore
+Documentation=https://matrix-construct.github.io/tuwunel/maintenance.html
+After=local-fs.target var-lib-virtiofs-data.mount matrix-tools-build.service
+Requires=var-lib-virtiofs-data.mount
+Wants=matrix-tools-build.service
+Before=matrix-homeserver.service
+
+# Only run if the homeserver has been configured
+ConditionPathExists=/etc/quadlets/matrix/tuwunel.env
+
+# Only restore when no RocksDB database exists yet
+ConditionPathExists=!/var/lib/quadlets/matrix/tuwunel/db/CURRENT
+# And there is at least one backup archive available to restore from
+ConditionPathExistsGlob=/var/lib/virtiofs/data/matrix/tuwunel/backup/*.tar.gz
+
+PartOf=matrix.target
+
+[Container]
+ContainerName=matrix-restore-job
+Image=localhost/matrix-tools:latest
+
+# No need for root privileges
+User=10031
+Group=10000
+
+# Restore script
+Entrypoint=/usr/local/bin/restore.sh
+Volume=/etc/quadlets/matrix/restore.sh:/usr/local/bin/restore.sh:z,ro
+
+# Latest backup archive from virtiofs (read-only)
+Environment=BACKUP_SOURCE=/backup
+Volume=/var/lib/virtiofs/data/matrix/tuwunel/backup:/backup:z,ro
+
+# Database destination
+Environment=DB_DEST=/var/lib/tuwunel/db
+Volume=/var/lib/quadlets/matrix/tuwunel/db:/var/lib/tuwunel/db:z
+
+[Service]
+Restart=no
+TimeoutStartSec=infinity
+Type=oneshot

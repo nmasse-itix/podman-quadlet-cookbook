@@ -1,0 +1,46 @@
+[Unit]
+Description=Matrix Element Web Client
+Documentation=https://element.io/
+After=local-fs.target network.target
+Before=matrix.target
+
+ConditionPathExists=/etc/quadlets/matrix/element-web/config.json
+
+PartOf=matrix.target
+
+[Container]
+ContainerName=matrix-web
+Image=matrix-web.image
+AutoUpdate=registry
+
+# Network
+Network=host
+
+# Port - must match ELEMENT_WEB_PORT below
+Environment=ELEMENT_WEB_PORT=8080
+
+# Config file (must exist before starting)
+Volume=/etc/quadlets/matrix/element-web/config.json:/app/config.json:z,ro
+Volume=/etc/quadlets/matrix/element-web/nginx-default.conf.template:/etc/nginx/templates/default.conf.template:z,ro
+
+# UID/GID mapping to map the nginx (101) user & group inside the container to arbitrary user 10031 / group 10000 on the host
+UIDMap=0:1000000:65535
+UIDMap=+101:10031:1
+GIDMap=0:1000000:65535
+GIDMap=+101:10000:1
+
+# Health check
+HealthCmd=wget -q -O /dev/null http://127.0.0.1:8080/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=matrix.target

@@ -1,0 +1,11 @@
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "http://matrix.example.com",
+            "server_name": "example.com"
+        }
+    },
+    "brand": "Element",
+    "disable_guests": true,
+    "default_country_code": "FR"
+}

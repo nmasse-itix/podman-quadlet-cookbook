@@ -1,0 +1,40 @@
+[Unit]
+Description=Matrix Homeserver (Tuwunel)
+Documentation=https://matrix-construct.github.io/tuwunel/
+After=local-fs.target network.target var-lib-virtiofs-data.mount matrix-restore.service
+Requires=var-lib-virtiofs-data.mount matrix-restore.service
+Before=matrix.target
+
+# Only run if the homeserver has been configured
+ConditionPathExists=/etc/quadlets/matrix/tuwunel.env
+
+PartOf=matrix.target
+
+[Container]
+ContainerName=matrix-homeserver
+Image=matrix-homeserver.image
+AutoUpdate=registry
+
+# No need for root privileges
+User=10031
+Group=10000
+
+# Network
+Network=host
+
+# Environment
+EnvironmentFile=/etc/quadlets/matrix/tuwunel.env
+
+# Storage: database (local) and media files (virtiofs)
+Volume=/var/lib/quadlets/matrix/tuwunel/db:/var/lib/tuwunel/db:z
+Volume=/var/lib/virtiofs/data/matrix/tuwunel/media:/var/lib/tuwunel/media:z
+Volume=/var/lib/quadlets/matrix/tuwunel/backup-staging:/var/lib/tuwunel/backup:z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=matrix.target

@@ -1,0 +1,4 @@
+FROM quay.io/centos/centos:stream10
+
+RUN dnf install -y curl jq \
+ && dnf clean all

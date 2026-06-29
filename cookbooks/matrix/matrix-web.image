@@ -1,0 +1,8 @@
+[Unit]
+Description=podman pull docker.io/vectorim/element-web
+Documentation=https://element.io/
+
+ConditionPathExists=/etc/quadlets/matrix/element-web/config.json
+
+[Image]
+Image=docker.io/vectorim/element-web:latest

@@ -1,0 +1,25 @@
+http:
+  routers:
+    matrix:
+      rule: "Host(`matrix`)"
+      entryPoints:
+      - http
+      middlewares:
+      service: "matrix"
+    matrix-web:
+      # Element Web client
+      rule: "Host(`matrix-chat`)"
+      entryPoints:
+      - http
+      middlewares:
+      service: "matrix-web"
+  services:
+    matrix:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:6167"
+        passHostHeader: true
+    matrix-web:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"

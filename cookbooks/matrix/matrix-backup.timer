@@ -1,0 +1,11 @@
+[Unit]
+Description=Matrix Homeserver - Database Backup Timer
+Documentation=https://matrix-construct.github.io/tuwunel/maintenance.html
+PartOf=matrix.target
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=matrix.target

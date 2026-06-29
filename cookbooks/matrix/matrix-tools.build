@@ -1,0 +1,9 @@
+[Unit]
+Description=Matrix tools image build (backup, restore, init scripts)
+Wants=network-online.target centos-stream10-image.service
+After=network-online.target centos-stream10-image.service
+
+[Build]
+File=/etc/quadlets/matrix/container/Containerfile
+ImageTag=localhost/matrix-tools:latest
+SetWorkingDirectory=/etc/quadlets/matrix/container

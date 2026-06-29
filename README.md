@@ -13,6 +13,7 @@ A common Makefile-based tooling (`make install`, `make package`, `make pytest`, 
 - [forgejo](cookbooks/forgejo/): self-hosted Git service (formerly Gitea), a lightweight GitHub/GitLab alternative, with PostgreSQL backend.
 - [keycloak](cookbooks/keycloak/): open source identity and access management server with PostgreSQL backend.
 - [lego](cookbooks/lego/): Let's Encrypt/ACME client for automatic SSL/TLS certificate management and renewal.
+- [matrix](cookbooks/matrix/): self-hosted Matrix homeserver (Tuwunel) with Element Web client, automated backups and restore.
 - [miniflux](cookbooks/miniflux/): minimalist RSS/Atom feed reader with PostgreSQL backend.
 - [nextcloud](cookbooks/nextcloud/): self-hosted file sync and share platform with all its dependencies, handles automated upgrades.
 - [nftables](cookbooks/nftables/): system-wide nftables firewall rules, composable via hooks from other cookbooks.

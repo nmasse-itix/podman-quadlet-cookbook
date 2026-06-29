@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: matrix
+    uid: 10031
+    gecos: Matrix
+    home_dir: /var/lib/quadlets/matrix
+    primary_group: itix-svc
