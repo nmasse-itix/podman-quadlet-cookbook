@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Install dependencies
+        run: dnf install -y butane yq make git tar findutils
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create minimal local.bu for CI
+        run: |
+          cat > local.bu << 'EOF'
+          variant: fcos
+          version: 1.4.0
+          EOF
+
+      - name: Build packages
+        run: |
+          mkdir -p /tmp/output
+          make -C cookbooks package \
+            PACKAGE_TARGET_DIR="/tmp/output" \
+            PACKAGE_TARGET_FORMAT="ignition archive"
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/output/*
+          fail_on_unmatched_files: true
