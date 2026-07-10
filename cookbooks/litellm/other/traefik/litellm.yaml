@@ -1,0 +1,16 @@
+http:
+  routers:
+    litellm:
+      rule: "Host(`litellm`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "litellm"
+      #tls:
+      #  certResolver: le
+  services:
+    litellm:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:4000"

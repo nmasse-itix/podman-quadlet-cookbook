@@ -1,0 +1,13 @@
+[Unit]
+Description=LiteLLM Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target litellm.service
+After=postgresql.target litellm.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if LiteLLM has been configured
+ConditionPathExists=/etc/quadlets/litellm/config.env
+
+[Install]
+WantedBy=multi-user.target

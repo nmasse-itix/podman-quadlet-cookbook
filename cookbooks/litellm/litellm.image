@@ -1,0 +1,7 @@
+[Unit]
+Description=podman pull ghcr.io/berriai/litellm-non_root
+Documentation=https://docs.litellm.ai/docs/proxy/docker_image_security
+
+[Image]
+# Non-root variant of the LiteLLM image (runs as UID/GID 65534)
+Image=ghcr.io/berriai/litellm-non_root:main-stable

@@ -1,0 +1,62 @@
+[Unit]
+Description=LiteLLM Proxy Server
+Documentation=https://docs.litellm.ai/docs/proxy/deploy
+After=network.target
+
+# Only start if LiteLLM has been configured
+ConditionPathExists=/etc/quadlets/litellm/config.env
+ConditionPathExists=/etc/quadlets/litellm/config.yaml
+
+# Start/stop this unit when the target is started/stopped
+PartOf=litellm.target
+
+[Container]
+ContainerName=litellm
+Image=litellm.image
+AutoUpdate=registry
+
+# The non-root image runs as the "nobody" user (UID/GID 65534)
+User=65534
+Group=65534
+
+# UID/GID mapping to map the nobody (65534) user inside the container to the
+# dedicated litellm user (10024) / itix-svc group (10000) on the host
+UIDMap=0:1000000:65535
+UIDMap=+65534:10024:1
+GIDMap=0:1000000:65535
+GIDMap=+65534:10000:1
+
+# Network configuration
+Network=host
+
+# Run in proxy mode with the provided configuration file
+Exec=--config /app/config.yaml
+
+# Redirect the root path (/) to the Admin UI and expose the docs under /docs
+Environment=ROOT_REDIRECT_URL=/ui
+Environment=DOCS_URL=/docs
+
+# Secrets and passwords (master key, UI credentials, database URL)
+EnvironmentFile=/etc/quadlets/litellm/config.env
+
+# Volume mounts
+Volume=/etc/quadlets/litellm/config.yaml:/app/config.yaml:ro,z
+
+# Health check
+HealthCmd=python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:4000/health/liveliness")'
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=60s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to be ready on localhost
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=litellm.target

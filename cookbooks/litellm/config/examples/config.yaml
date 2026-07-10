@@ -1,0 +1,24 @@
+##
+## LiteLLM Proxy configuration
+## https://docs.litellm.ai/docs/proxy/config_settings
+##
+## Secrets (master key, UI credentials, database URL) are NOT set here.
+## They are injected as environment variables from config.env.
+##
+
+model_list:
+  # Declare your models here, or add them through the Admin UI (they will be
+  # persisted in the database thanks to `store_model_in_db`).
+  #
+  # - model_name: gpt-4o
+  #   litellm_params:
+  #     model: openai/gpt-4o
+  #     api_key: os.environ/OPENAI_API_KEY
+
+general_settings:
+  # Persist models and credentials added through the Admin UI in the database.
+  store_model_in_db: true
+
+litellm_settings:
+  # Drop parameters unsupported by the target provider instead of failing.
+  drop_params: true

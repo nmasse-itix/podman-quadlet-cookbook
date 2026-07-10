@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: litellm
+    uid: 10024
+    gecos: LiteLLM
+    home_dir: /var/lib/quadlets/litellm
+    primary_group: itix-svc
