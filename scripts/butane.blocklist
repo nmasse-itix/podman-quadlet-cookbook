@@ -11,3 +11,5 @@
 /etc/sysctl.d
 /etc/profile.d
 /etc/sysconfig
+/etc/polkit-1
+/etc/polkit-1/rules.d

@@ -189,7 +189,7 @@ dryrun:
 	fi
 
 # Create the base directories needed for installation.
-$(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d $(TARGET_CHROOT)/etc/profile.d:
+$(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d $(TARGET_CHROOT)/etc/profile.d $(TARGET_CHROOT)/etc/polkit-1/rules.d:
 	install -D -d -m 0755 -o root -g root $@
 
 # Create the directory to store quadlet configuration files.
