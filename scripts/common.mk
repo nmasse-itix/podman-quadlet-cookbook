@@ -115,8 +115,8 @@ TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROO
 TARGET_EXAMPLES_POLKITD_FILES = $(patsubst polkit-rules.d/examples/%, $(TARGET_CHROOT)/etc/polkit-1/rules.d/60-%, $(EXAMPLES_POLKITD_FILES))
 
 # Example quadlet and systemd drop-ins files
-EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
-EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.(service|target|timer|mount)\.d/' 2>/dev/null; fi)
+EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.?(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
+EXAMPLES_SYSTEMD_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.?(service|target|timer|mount)\.d/' 2>/dev/null; fi)
 TARGET_EXAMPLES_QUADLET_DROPINS_FILES = $(patsubst dropins/%, $(TARGET_CHROOT)/etc/containers/systemd/%, $(EXAMPLES_QUADLET_DROPINS_FILES))
 TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst dropins/%, $(TARGET_CHROOT)/etc/systemd/system/%, $(EXAMPLES_SYSTEMD_DROPINS_FILES))
 
