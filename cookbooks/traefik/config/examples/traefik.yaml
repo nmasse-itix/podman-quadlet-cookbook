@@ -24,6 +24,19 @@ providers:
     directory: /etc/traefik/conf.d/
     watch: true
 
+# Hosted (community) plugins. Static plugin declarations MUST live here — they
+# cannot be declared from the per-application dynamic configuration (conf.d/).
+# Traefik downloads and compiles them at startup into ./plugins-storage (hence
+# the WorkingDir in traefik.container).
+#
+# api-key-and-token-middleware: Bearer/API-key authentication middleware, used
+# e.g. by the vLLM cookbook (see its conf.d/vllm.yaml).
+experimental:
+  plugins:
+    traefik-api-token-middleware:
+      moduleName: "github.com/Aetherinox/traefik-api-token-middleware"
+      version: "v0.1.4"
+
 # certificatesResolvers:
 #   le:
 #     acme:

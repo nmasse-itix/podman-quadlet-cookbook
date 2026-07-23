@@ -23,6 +23,11 @@ AddCapability=CAP_NET_BIND_SERVICE
 Volume=/var/lib/quadlets/traefik:/var/lib/traefik:z
 Volume=/etc/quadlets/traefik:/etc/traefik:z
 
+# Run from the persistent, writable state directory so that hosted plugins
+# (experimental.plugins) can be downloaded and compiled into ./plugins-storage.
+# The image WORKDIR is "/", which is not writable by the unprivileged user.
+WorkingDir=/var/lib/traefik
+
 # Network
 Network=host
 

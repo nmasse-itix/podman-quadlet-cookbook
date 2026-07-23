@@ -37,6 +37,23 @@ EntryPoint=/usr/local/bin/traefik
 Exec=--foo=bar --baz=qux ...
 ```
 
+## Community plugins
+
+Hosted (community) plugins are declared in the static configuration under
+`experimental.plugins` in `traefik.yaml`. They **cannot** be declared from the
+per-application dynamic configuration (`conf.d/`), so the declaration must live in
+`traefik.yaml` even when the middleware is only consumed by another cookbook.
+
+Traefik downloads and compiles plugins at startup into a `plugins-storage`
+directory **relative to its working directory**. Since the image `WORKDIR` is `/`
+(not writable by the unprivileged `traefik` user), the container sets
+`WorkingDir=/var/lib/traefik` so plugins land in the persistent, writable state
+volume.
+
+The example configuration ships the
+[`api-key-and-token-middleware`](https://plugins.traefik.io/plugins/66f6ac697dd5a6c3095befd3/api-key-and-token-middleware)
+plugin, used by the `vllm` cookbook to enforce Bearer/API-key authentication.
+
 ## Usage
 
 In a separate terminal, follow the logs.
