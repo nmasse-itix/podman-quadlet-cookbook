@@ -84,31 +84,35 @@ SYSTEMD_TIMER_NAMES := $(wildcard *.timer)
 
 # The main systemd units will be enabled and started after installation.
 SYSTEMD_MAIN_UNIT_NAMES ?= $(wildcard *.target)
-SYSTEMD_START_UNITS = $(SYSTEMD_MAIN_UNIT_NAMES)
+SYSTEMD_START_UNITS ?= $(SYSTEMD_MAIN_UNIT_NAMES)
 
 # Generated systemd units (quadlets) cannot be enabled.
 # That's why we filter them out from the list of units to be enabled.
-SYSTEMD_ENABLE_UNITS = $(filter-out $(QUADLET_UNIT_NAMES),$(SYSTEMD_MAIN_UNIT_NAMES))
+SYSTEMD_ENABLE_UNITS ?= $(filter-out $(QUADLET_UNIT_NAMES),$(SYSTEMD_MAIN_UNIT_NAMES))
 
 # Configuration files
 CONFIG_FILES := $(shell find config/ -mindepth 1 \! -path "config/examples/*" \! -path "config/examples" 2>/dev/null)
 TMPFILESD_FILES = $(filter-out %/examples, $(wildcard tmpfiles.d/*))
 SYSCTLD_FILES = $(filter-out %/examples, $(wildcard sysctl.d/*))
 PROFILED_FILES = $(filter-out %/examples, $(wildcard profile.d/*))
+POLKITD_FILES = $(filter-out %/examples, $(wildcard polkit-rules.d/*))
 TARGET_CONFIG_FILES = $(patsubst config/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(CONFIG_FILES))
 TARGET_TMPFILESD_FILES = $(patsubst tmpfiles.d/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(TMPFILESD_FILES))
 TARGET_SYSCTLD_FILES = $(patsubst sysctl.d/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(SYSCTLD_FILES))
 TARGET_PROFILED_FILES = $(patsubst profile.d/%, $(TARGET_CHROOT)/etc/profile.d/%, $(PROFILED_FILES))
+TARGET_POLKITD_FILES = $(patsubst polkit-rules.d/%, $(TARGET_CHROOT)/etc/polkit-1/rules.d/60-%, $(POLKITD_FILES))
 
 # Example configuration files
 EXAMPLES_CONFIG_FILES := $(shell find config/examples -mindepth 1 2>/dev/null)
 EXAMPLES_TMPFILESD_FILES = $(wildcard tmpfiles.d/examples/*)
 EXAMPLES_SYSCTLD_FILES = $(wildcard sysctl.d/examples/*)
 EXAMPLES_PROFILED_FILES = $(wildcard profile.d/examples/*)
+EXAMPLES_POLKITD_FILES = $(wildcard polkit-rules.d/examples/*)
 TARGET_EXAMPLES_CONFIG_FILES = $(patsubst config/examples/%, $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%, $(EXAMPLES_CONFIG_FILES))
 TARGET_EXAMPLES_TMPFILESD_FILES = $(patsubst tmpfiles.d/examples/%, $(TARGET_CHROOT)/etc/tmpfiles.d/%, $(EXAMPLES_TMPFILESD_FILES))
 TARGET_EXAMPLES_SYSCTLD_FILES = $(patsubst sysctl.d/examples/%, $(TARGET_CHROOT)/etc/sysctl.d/%, $(EXAMPLES_SYSCTLD_FILES))
 TARGET_EXAMPLES_PROFILED_FILES = $(patsubst profile.d/examples/%, $(TARGET_CHROOT)/etc/profile.d/%, $(EXAMPLES_PROFILED_FILES))
+TARGET_EXAMPLES_POLKITD_FILES = $(patsubst polkit-rules.d/examples/%, $(TARGET_CHROOT)/etc/polkit-1/rules.d/60-%, $(EXAMPLES_POLKITD_FILES))
 
 # Example quadlet and systemd drop-ins files
 EXAMPLES_QUADLET_DROPINS_FILES := $(shell if [ -d dropins ]; then find dropins -mindepth 1 -type f | grep -E '\.(container|volume|network|pod|build|image)\.d/' 2>/dev/null; fi)
@@ -119,10 +123,10 @@ TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES = $(patsubst dropins/%, $(TARGET_CHROOT)/e
 # All configuration files to be installed
 TARGET_FILES += $(addprefix $(TARGET_CHROOT)/etc/containers/systemd/, $(QUADLETS_FILES)) \
 				$(addprefix $(TARGET_CHROOT)/etc/systemd/system/, $(SYSTEMD_FILES)) \
-				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES) $(TARGET_PROFILED_FILES)
+				$(TARGET_CONFIG_FILES) $(TARGET_TMPFILESD_FILES) $(TARGET_SYSCTLD_FILES) $(TARGET_PROFILED_FILES) $(TARGET_POLKITD_FILES)
 
 # All example configuration files to be installed
-TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES) $(TARGET_EXAMPLES_QUADLET_DROPINS_FILES) $(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES)
+TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFILESD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES) $(TARGET_EXAMPLES_PROFILED_FILES) $(TARGET_EXAMPLES_POLKITD_FILES) $(TARGET_EXAMPLES_QUADLET_DROPINS_FILES) $(TARGET_EXAMPLES_SYSTEMD_DROPINS_FILES)
 
 # Dependencies on other projects
 # List here the names of other projects (directories at the top-level) that this project depends on.
@@ -162,16 +166,27 @@ pre-requisites::
 		exit 1; \
 	fi
 	@set -Eeuo pipefail; \
-	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq podlet pip3 ncat; do \
+	for tool in install systemctl systemd-analyze systemd-tmpfiles sysctl virt-install virsh qemu-img journalctl coreos-installer resize butane yq podlet pip3 ncat npx; do \
 		if ! which $$tool &>/dev/null ; then \
 			echo "$$tool is not installed. Please install it first." >&2; \
 			exit 1; \
 		fi ; \
 	done
 
+# ESLint used to lint polkit rules. Pinned for reproducibility; override for a local install (e.g. ESLINT=eslint).
+dryrun: ESLINT ?= npx --yes eslint@9
+# Polkit JavaScript rules shipped by this project (linted during dryrun).
+dryrun: POLKIT_RULES_FILES = $(POLKITD_FILES) $(EXAMPLES_POLKITD_FILES)
+
 # Perform a dry run of the podman systemd generator to validate the quadlet and systemd files.
+# Also lint the polkit rules using ESLint.
 dryrun:
 	QUADLET_UNIT_DIRS="$$PWD" /usr/lib/systemd/system-generators/podman-system-generator -dryrun > /dev/null
+	@run() { echo $$*; "$$@"; }; \
+	set -Eeuo pipefail; \
+	if [ x$(POLKIT_RULES_FILES) != x ]; then \
+		run $(ESLINT) --no-config-lookup --config $(SCRIPTS_DIR)/polkit.eslint.config.mjs $(POLKIT_RULES_FILES); \
+	fi
 
 # Create the base directories needed for installation.
 $(TARGET_CHROOT)/etc/containers/systemd $(TARGET_CHROOT)/etc/systemd/system $(TARGET_CHROOT)/etc/tmpfiles.d $(TARGET_CHROOT)/etc/sysctl.d $(TARGET_CHROOT)/etc/profile.d:
@@ -189,29 +204,40 @@ $(TARGET_CHROOT)/etc/containers/systemd/%: % $(TARGET_CHROOT)/etc/containers/sys
 $(TARGET_CHROOT)/etc/systemd/system/%: % $(TARGET_CHROOT)/etc/systemd/system
 	install -m 0644 -o root -g root $< $@
 
-# Copy configuration files, handling executable and non-executable files differently.
+# Copy configuration files, handling .env files, "container" build contexts and regular files differently.
 $(TARGET_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
 $(TARGET_EXAMPLES_CONFIG_FILES): $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)/%: config/examples/% $(TARGET_CHROOT)/etc/quadlets/$(PROJECT_NAME)
-$(filter-out %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
+$(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES):
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
-	if [ -d $< ]; then \
-		run install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@; \
-	else \
-		path="$<"; \
-		extension="$${path##*.}"; \
-		if [ "$$extension" == "sh" ] && [ -x "$<" ]; then \
+	case "$<" in \
+	*.env) \
+		# .env files may hold secrets: owned by root:root with restrictive 0600 permissions. \
+		run install -D -m 0600 -o root -g root $< $@ ;; \
+	*/container|*/container/*) \
+		# Build contexts (Containerfile, entrypoints, ...) are consumed by root: owned by root:root with broad permissions. \
+		if [ -d "$<" ]; then \
+			run install -d -m 0755 -o root -g root $@; \
+		elif [ -x "$<" ]; then \
 			run install -m 0755 -o root -g root $< $@; \
-		elif [ -x $< ]; then \
-			run install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
 		else \
-			run install -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
-		fi ; \
-	fi; \
-
-# Handle .env files separately to set more restrictive permissions
-$(filter %.env, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
-	install -m 0600 -o root -g root -D $< $@
+			run install -m 0644 -o root -g root $< $@; \
+		fi ;; \
+	*) \
+		if [ -d "$<" ]; then \
+			run install -d -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $@; \
+		else \
+			path="$<"; \
+			extension="$${path##*.}"; \
+			if [ "$$extension" == "sh" ] && [ -x "$<" ]; then \
+				run install -m 0755 -o root -g root $< $@; \
+			elif [ -x $< ]; then \
+				run install -m 0755 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
+			else \
+				run install -m 0644 -o $(PROJECT_UID) -g $(PROJECT_GID) $< $@; \
+			fi ; \
+		fi ;; \
+	esac; \
 
 # Copy systemd and quadlet drop-ins files
 $(TARGET_EXAMPLES_QUADLET_DROPINS_FILES): $(TARGET_CHROOT)/etc/containers/systemd/%: dropins/% $(TARGET_CHROOT)/etc/containers/systemd
@@ -235,6 +261,12 @@ $(TARGET_SYSCTLD_FILES) $(TARGET_EXAMPLES_SYSCTLD_FILES):
 $(TARGET_PROFILED_FILES): $(TARGET_CHROOT)/etc/profile.d/%: profile.d/% $(TARGET_CHROOT)/etc/profile.d
 $(TARGET_EXAMPLES_PROFILED_FILES): $(TARGET_CHROOT)/etc/profile.d/%: profile.d/examples/% $(TARGET_CHROOT)/etc/profile.d
 $(TARGET_PROFILED_FILES) $(TARGET_EXAMPLES_PROFILED_FILES):
+	install -D -m 0644 -o root -g root $< $@
+
+# Copy polkit-rules.d files
+$(TARGET_POLKITD_FILES): $(TARGET_CHROOT)/etc/polkit-1/rules.d/60-%: polkit-rules.d/% $(TARGET_CHROOT)/etc/polkit-1/rules.d
+$(TARGET_EXAMPLES_POLKITD_FILES): $(TARGET_CHROOT)/etc/polkit-1/rules.d/60-%: polkit-rules.d/examples/% $(TARGET_CHROOT)/etc/polkit-1/rules.d
+$(TARGET_POLKITD_FILES) $(TARGET_EXAMPLES_POLKITD_FILES):
 	install -D -m 0644 -o root -g root $< $@
 
 # Create the directory to store quadlet state and data.
@@ -269,6 +301,12 @@ install-actions: install-actions-pre
 	systemctl daemon-reload
 	@run() { echo $$*; "$$@"; }; \
 	set -Eeuo pipefail; \
+	if [[ "$(PROJECT_GID)" -ne 0 ]] && ! getent group "$(PROJECT_GID)" &>/dev/null; then \
+		run groupadd -g $(PROJECT_GID) $(PROJECT_NAME); \
+	fi; \
+	if [[ "$(PROJECT_UID)" -ne 0 ]] && ! getent passwd "$(PROJECT_UID)" >/dev/null 2>&1; then \
+		run useradd -u $(PROJECT_UID) -g $(PROJECT_GID) -M -d /var/lib/quadlets/$(PROJECT_NAME) -c "$(PROJECT_NAME) quadlet" $(PROJECT_NAME); \
+	fi; \
 	if [[ ! "$(QUADLET_UNIT_NAMES)" =~ ^[[:space:]]*$$ ]]; then \
 		run systemd-analyze --generators=true verify $(QUADLET_UNIT_NAMES); \
 	fi; \

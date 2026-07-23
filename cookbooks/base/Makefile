@@ -19,3 +19,13 @@ pre-requisites::
 			exit 1; \
 		fi ; \
 	done
+
+install-actions-pre::
+	@set -Eeuo pipefail; \
+	run() { echo $$*; "$$@"; }; \
+	if ! getent group itix-svc >/dev/null; then \
+		run groupadd -g 10000 itix-svc; \
+	fi ; \
+	if ! getent passwd itix-svc >/dev/null; then \
+		run useradd -u 10000 -g 10000 -M -d /tmp -c "ITIX Misc. Services" itix-svc; \
+	fi
