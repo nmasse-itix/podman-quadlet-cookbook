@@ -1,0 +1,15 @@
+[Unit]
+Description=vLLM Inferencing Service
+Documentation=man:systemd.target(5)
+
+# The control plane. The vLLM models (vllm-model@<model>.service) are NOT started here:
+# llmsnap starts/stops them on demand and its swap group keeps one running at a
+# time. Starting the target brings up llmsnap; llmsnap brings up the models.
+Requires=llmsnap.service
+After=llmsnap.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

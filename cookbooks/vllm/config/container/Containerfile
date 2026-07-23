@@ -1,0 +1,42 @@
+# Minimal llmsnap control-plane image.
+#
+# In this cookbook llmsnap is a PURE CONTROL PLANE: it does NOT run the vLLM
+# models itself. Each model is a separate Podman Quadlet — an instance of the
+# vllm-model@.container template -> vllm-model@<model>.service; llmsnap only
+# starts/stops those systemd units over
+# the host D-Bus system bus (see llmsnap.container and the polkit rule installed
+# by other/base/install-tools.d/vllm-polkit.sh).
+#
+# The image therefore only needs: the llmsnap binary + `systemctl` (to drive the
+# host units over D-Bus) + CA certificates. It needs NO podman and NO GPU, which
+# is exactly what lets llmsnap run as an unprivileged, capability-dropped
+# container.
+FROM quay.io/fedora/fedora:44
+
+# systemctl (systemd package) is invoked by the model `cmd`s in config.yaml to
+# start/stop the vllm-model@<model>.service units over D-Bus. curl/tar to fetch llmsnap.
+RUN dnf install -y systemd ca-certificates curl tar gzip \
+ && dnf clean all
+
+# Supply-chain hygiene: llmsnap is a low-visibility GitHub release. Pin the
+# version and verify the tarball against a local copy of SHA256SUMS before trusting
+# it. Architecture is detected from the build host (aarch64 -> arm64, x86_64 ->
+# amd64), so the same Containerfile builds on both.
+ARG LLMSNAP_VERSION=0.0.5
+ADD llmsnap_${LLMSNAP_VERSION}_checksums.txt /tmp/llmsnap_${LLMSNAP_VERSION}_checksums.txt
+RUN set -Eeuo pipefail; \
+    declare -A arch_map=( [x86_64]=amd64 [aarch64]=arm64 ); \
+    arch="${arch_map[$(uname -m)]:?unsupported architecture: $(uname -m)}"; \
+    base="https://github.com/napmany/llmsnap/releases/download/v${LLMSNAP_VERSION}"; \
+    tarball="llmsnap_${LLMSNAP_VERSION}_linux_${arch}.tar.gz"; \
+    cd /tmp; \
+    curl -sSfL -o "$tarball" "$base/$tarball"; \
+    grep " $tarball\$" /tmp/llmsnap_${LLMSNAP_VERSION}_checksums.txt | sha256sum -c -; \
+    tar -xzf "$tarball" -C /usr/local/bin llmsnap; \
+    rm -f "$tarball" /tmp/llmsnap_${LLMSNAP_VERSION}_checksums.txt; \
+    chmod 0755 /usr/local/bin/llmsnap; \
+    /usr/local/bin/llmsnap --version
+
+# llmsnap flags are appended by the Quadlet (Exec=).
+ENTRYPOINT ["/usr/local/bin/llmsnap"]
+CMD []

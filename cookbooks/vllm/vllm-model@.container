@@ -1,0 +1,58 @@
+[Unit]
+Description=vLLM model — %i (CPU smoke test)
+Documentation=https://docs.vllm.ai/
+
+# Only usable once the cookbook has been configured: this model's own engine config (models/%i.yaml, mounted below) must exist.
+ConditionPathExists=/etc/quadlets/vllm/models/%i.yaml
+ConditionPathExists=/etc/quadlets/vllm/models/%i.env
+
+# IMPORTANT: model units are deliberately NOT started at boot and are NOT pulled
+# in by vllm.target (no [Install], and the target does not Want/Require them).
+# llmsnap owns their lifecycle: it runs `systemctl start/stop
+# vllm-model@%i.service` on demand and its swap group keeps a single model
+# running at a time (a GPU only fits one). `PartOf=` only makes the model stop
+# when the target stops.
+PartOf=vllm.target
+
+# `Image=vllm.image` makes Quadlet add the dependency on vllm-image.service, so
+# the image is pulled before the model starts.
+
+[Container]
+# One template serves every model: systemd expands %i to the instance name (e.g.
+# `qwen05` for vllm-model@qwen05.service). The per-model differences live OUTSIDE
+# this file:
+#   - engine parameters  -> /etc/quadlets/vllm/models/%i.yaml (mounted below)
+#   - fixed loopback port -> a per-instance drop-in sets PublishPort
+#     (dropins/vllm-model@%i.container.d/10-port.conf)
+ContainerName=vllm-%i
+Image=vllm.image
+AutoUpdate=local
+
+# Hugging Face weights cache (re-downloadable, non-precious). Shared by all models.
+Volume=/var/lib/quadlets/vllm/cache:/root/.cache/huggingface:z
+Environment=VLLM_CPU_KVCACHE_SPACE=4
+ShmSize=4g
+
+# Host network: llmsnap must bind 127.0.0.1:8000 on the HOST (reached by Traefik,
+# which runs Network=host) and reach each model on the host loopback
+# (127.0.0.1:5801+, published by the model Quadlets). A bridged namespace would
+# make 127.0.0.1 the container's own loopback, not the host's.
+Network=host
+
+# vLLM engine configuration (read-only). Every model parameter lives in this
+# per-model file instead of on the command line; see config/examples/models/.
+Volume=/etc/quadlets/vllm/models/%i.yaml:/etc/vllm/config.yaml:ro,Z
+EnvironmentFile=/etc/quadlets/vllm/vllm.env
+EnvironmentFile=/etc/quadlets/vllm/models/%i.env
+
+# The CPU image ENTRYPOINT is `vllm serve`; this flag is appended to it. vLLM
+# reads every engine parameter from the mounted config file.
+Exec=--config /etc/vllm/config.yaml
+
+[Service]
+# vLLM cold start (weights download on first run + slow CPU load). llmsnap does
+# its own HTTP health polling on top (healthCheckTimeout in config.yaml).
+TimeoutStartSec=1800
+
+# Load the VLLM_IMAGE environment variable
+EnvironmentFile=/etc/quadlets/vllm/vllm.env

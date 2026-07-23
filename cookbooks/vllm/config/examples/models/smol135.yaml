@@ -1,0 +1,32 @@
+##
+## vLLM engine configuration — smol135 (CPU smoke test)
+##
+## Consumed by `vllm serve --config` (see vllm-model@.container). Each key is a
+## long CLI flag with the leading `--` stripped; store-true flags (e.g.
+## --enforce-eager) become `true`.
+##
+## Installed to /etc/quadlets/vllm/models/smol135.yaml and mounted read-only into
+## the container at /etc/vllm/config.yaml.
+##
+
+# Ultra-light model of a DIFFERENT architecture (Llama vs Qwen2) so the swap is
+# genuinely exercised. No tool-call parser (SmolLM has no tool template).
+model: HuggingFaceTB/SmolLM2-135M-Instruct
+served-model-name: smol135
+dtype: bfloat16
+max-model-len: 4096
+max-num-seqs: 4
+
+##
+## Per-instance fixed host-loopback port for the smol135 model.
+##
+## Referenced by llmsnap's per-model
+## `proxy: http://127.0.0.1:5802` in config.yaml (llmsnap runs Network=host and
+## reaches the model here). Each model gets its OWN port so two models can be
+## resident at once (GPU sleep mode). Keep it in sync with config.yaml.
+##
+port: 5802
+
+# --enforce-eager: this CPU image's torch inductor JIT fails at warmup; eager
+# mode skips it (fine for a smoke test).
+enforce-eager: true

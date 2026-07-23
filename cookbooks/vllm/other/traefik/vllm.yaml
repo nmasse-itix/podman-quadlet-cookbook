@@ -1,0 +1,51 @@
+# vLLM (llmsnap) ingress — Traefik dynamic configuration.
+# Deployed by the "traefik" cookbook hook to /etc/quadlets/traefik/conf.d/vllm.yaml.
+#
+# This replaces the original HAProxy front-end. It keeps the same security model:
+#
+#   1. TLS termination with an automatic Let's Encrypt certificate.
+#   2. API-key authentication (Authorization: Bearer <key>), enforced by the
+#      "api-key-and-token-middleware" community plugin. A missing/invalid key is
+#      rejected with HTTP 403.
+#   3. A strict path allowlist: only the OpenAI inference surface (/v1/*) is
+#      exposed. Everything else — llmsnap's /upstream/* passthrough (hence vLLM's
+#      /sleep, /wake_up, /collective_rpc in VLLM_SERVER_DEV_MODE) and the whole
+#      management/UI surface — is NOT routed and therefore returns 404.
+#
+# Prerequisites in the traefik cookbook:
+#   - the "traefik-api-token-middleware" plugin declared in traefik.yaml
+#     (experimental.plugins) — provided by the traefik cookbook example config.
+http:
+  middlewares:
+    # Bearer-token authentication. Extracts the token from "Authorization: Bearer
+    # <token>" and checks it against the allowlist below. On success the header is
+    # stripped before forwarding, so the key never reaches llmsnap/vLLM.
+    vllm-api-token:
+      plugin:
+        traefik-api-token-middleware:
+          bearerHeader: true
+          bearerHeaderName: "Authorization"
+          # Disable the X-API-TOKEN header form: OpenAI clients only send Bearer.
+          authenticationHeader: false
+          authenticationErrorMsg: "Access Denied"
+          removeHeadersOnSuccess: true
+          # Allowed API keys. Generate one with: echo "sk-$(openssl rand -hex 32)"
+          # List the RAW token here (without the "Bearer " prefix).
+          tokens:
+            - "secret123"
+  routers:
+    vllm:
+      # Adjust the Host to your public FQDN. Only /v1/* is routed (path allowlist).
+      rule: "Host(`vllm`) && PathPrefix(`/v1/`)"
+      entryPoints:
+      - http
+      middlewares:
+      - vllm-api-token
+      service: "vllm"
+  services:
+    vllm:
+      loadBalancer:
+        servers:
+        # llmsnap listens on the host loopback only; Traefik (Network=host)
+        # reaches it directly. llmsnap then proxies to the awake vLLM model.
+        - url: "http://127.0.0.1:8000"

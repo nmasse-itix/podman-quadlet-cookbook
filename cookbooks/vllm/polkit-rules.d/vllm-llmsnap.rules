@@ -1,0 +1,16 @@
+// Allow the llmsnap control-plane container (system user "llmsnap", uid 8100) to
+// start/stop the vLLM model units over D-Bus, and nothing else. The default
+// policy still applies to every other action and unit.
+//
+// Note: the ^vllm-.* glob also covers vllm-image.service (the image pull), which
+// is harmless. It does NOT cover llmsnap.service itself (so llmsnap cannot
+// restart/stop its own control plane) nor any non-vLLM unit on the host.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "vllm") {
+        var unit = action.lookup("unit");
+        if (unit && /^vllm-.*\.service$/.test(unit)) {
+            return polkit.Result.YES;
+        }
+    }
+});

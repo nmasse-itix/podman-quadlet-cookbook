@@ -1,0 +1,73 @@
+[Unit]
+Description=llmsnap — vLLM control plane (drives model units over D-Bus)
+Documentation=https://github.com/napmany/llmsnap
+
+# Only start once the configuration has been provided by the user.
+ConditionPathExists=/etc/quadlets/vllm/llmsnap/config.yaml
+
+# Build the image first; the system D-Bus bus must be up to reach systemd.
+Wants=llmsnap-build.service network-online.target
+After=llmsnap-build.service network-online.target dbus.service
+
+# Start/stop this unit when the target is started/stopped.
+PartOf=vllm.target
+
+[Container]
+ContainerName=llmsnap
+Image=localhost/llmsnap:latest
+AutoUpdate=local
+
+# Run as the vllm user (uid 10032) and itix-svc group (gid 10000). User 10032 (vllm)
+# is authorized by polkit to manage the vllm-*.service model units over the host D-Bus bus.
+User=10032
+Group=10000
+
+# Host network: llmsnap must bind 127.0.0.1:8000 on the HOST (reached by Traefik,
+# which runs Network=host) and reach each model on the host loopback
+# (127.0.0.1:5801+, published by the model Quadlets). A bridged namespace would
+# make 127.0.0.1 the container's own loopback, not the host's.
+Network=host
+
+# Drive the host systemd over the system D-Bus bus. polkit authorizes uid 8100
+# for org.freedesktop.systemd1.manage-units on vllm-*.service ONLY.
+Volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+Environment=DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
+
+# llmsnap configuration (read-only).
+Volume=/etc/quadlets/vllm/llmsnap/config.yaml:/etc/llmsnap/config.yaml:ro,Z
+
+# SELinux: a confined container is denied access to the host D-Bus socket
+# (container_t -> system_dbusd_t). Disabling the label keeps the socket reachable
+# without shipping a custom SELinux module. The privilege boundary is enforced by
+# the non-root uid + the scoped polkit rule, not by SELinux confinement here.
+SecurityLabelDisable=true
+
+# Hardening: llmsnap is only an HTTP proxy + a D-Bus client. It needs no extra
+# capabilities and no writable root filesystem.
+NoNewPrivileges=true
+DropCapability=ALL
+ReadOnly=true
+Tmpfs=/tmp
+
+# `systemctl` (the model cmd:/cmdStop: in config.yaml) refuses to talk to the
+# host manager unless sd_booted() succeeds, i.e. unless /run/systemd/system
+# EXISTS in this mount namespace. With ReadOnly=true, Podman mounts a fresh empty
+# tmpfs over /run, so that path is absent and every systemctl call aborts early
+# with "System has not been booted with systemd (PID 1)" / EHOSTDOWN — *before*
+# it ever tries the D-Bus socket. This empty tmpfs just makes the directory
+# exist so the check passes; the actual start/stop/is-active still go over the
+# mounted host system bus (DBUS_SYSTEM_BUS_ADDRESS), gated by the polkit rule.
+Tmpfs=/run/systemd/system
+
+# ENTRYPOINT is the llmsnap binary; these are its arguments.
+Exec=--config /etc/llmsnap/config.yaml --listen 127.0.0.1:8000
+
+[Service]
+Restart=always
+RestartSec=5
+# Give in-flight model swaps time to settle on shutdown.
+TimeoutStopSec=60
+
+[Install]
+# Start with the target (llmsnap is the control plane; the models are not).
+WantedBy=vllm.target

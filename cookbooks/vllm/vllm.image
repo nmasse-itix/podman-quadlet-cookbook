@@ -1,0 +1,15 @@
+[Unit]
+Description=podman pull vLLM image
+Documentation=https://docs.vllm.ai/
+
+# Pull/remove the image together with the vLLM target. The image is also pulled
+# on demand: the vllm-model@.container template references `Image=vllm.image`, so each instance's
+# generated service depends on vllm-image.service and triggers the pull.
+PartOf=vllm.target
+
+[Image]
+Image=${VLLM_IMAGE}
+
+[Service]
+# Load the VLLM_IMAGE environment variable
+EnvironmentFile=/etc/quadlets/vllm/vllm.env

@@ -1,0 +1,37 @@
+##
+## vLLM engine configuration — qwen05 (CPU smoke test)
+##
+## Consumed by `vllm serve --config` (see vllm-model@.container). Each key is a
+## long CLI flag with the leading `--` stripped; store-true flags (e.g.
+## --enforce-eager) become `true`. CLI args passed after --config still win, so
+## the Quadlet keeps only `--config` and lets this file carry every parameter.
+##
+## Installed to /etc/quadlets/vllm/models/qwen05.yaml and mounted read-only into
+## the container at /etc/vllm/config.yaml.
+##
+
+# Tiny real instruct model: has a chat template AND a tool-call parser, so it
+# exercises /v1/chat/completions (what the Traefik /v1/* allowlist fronts).
+model: Qwen/Qwen2.5-0.5B-Instruct
+served-model-name: qwen05
+dtype: bfloat16
+max-model-len: 4096
+max-num-seqs: 4
+
+##
+## Per-instance fixed host-loopback port for the qwen05 model.
+##
+## Referenced by llmsnap's per-model
+## `proxy: http://127.0.0.1:5801` in config.yaml (llmsnap runs Network=host and
+## reaches the model here). Each model gets its OWN port so two models can be
+## resident at once (GPU sleep mode). Keep it in sync with config.yaml.
+##
+port: 5801
+
+# --enforce-eager: this CPU image's torch inductor JIT fails at warmup; eager
+# mode skips it (fine for a smoke test).
+enforce-eager: true
+
+# Tool-calling support (Qwen2 uses the hermes parser template).
+enable-auto-tool-choice: true
+tool-call-parser: hermes

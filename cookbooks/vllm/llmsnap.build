@@ -1,0 +1,11 @@
+[Unit]
+Description=llmsnap control-plane image build (llmsnap + systemctl over D-Bus)
+Documentation=https://github.com/napmany/llmsnap
+Wants=network-online.target fedora-image.service
+After=network-online.target fedora-image.service
+Requires=fedora-image.service
+
+[Build]
+File=/etc/quadlets/vllm/container/Containerfile
+ImageTag=localhost/llmsnap:latest
+SetWorkingDirectory=/etc/quadlets/vllm/container

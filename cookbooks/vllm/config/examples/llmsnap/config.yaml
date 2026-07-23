@@ -1,0 +1,72 @@
+# llmsnap — CPU smoke-test configuration.
+#
+# Purpose: validate the traefik -> llmsnap -> vLLM chain end to end WITHOUT a GPU.
+# The models are intentionally tiny (0.5B / 135M) so they download and load fast and
+# answer near-instantly on CPU. The point is NOT useful output, only that the chain
+# is wired correctly (routing, API key, /v1/* allowlist, model swap).
+#
+# ARCHITECTURE (Q1 + Q3): unlike a plain llama-swap setup, the models are NOT
+# launched by llmsnap as `podman run` children. Each model is a first-class Podman
+# Quadlet — an instance of the shared vllm-model@.container template, i.e.
+# vllm-model@<model>.service (see vllm-model@.container). llmsnap runs as a
+# CONTAINERIZED, NON-ROOT control plane (see llmsnap.container) and only
+# starts/stops those systemd units over the host D-Bus system bus. A polkit rule
+# authorizes it for `vllm-*.service` and nothing else (other/base/install-tools.d/
+# vllm-polkit.sh).
+#
+# Consequences for each model entry below:
+#   - `proxy:` is REQUIRED and points at the FIXED loopback port the Quadlet
+#     publishes (PublishPort=127.0.0.1:58NN:8000). We do NOT use llmsnap's dynamic
+#     ${PORT}: a Quadlet cannot consume llmsnap's runtime port.
+#   - `cmd:` is a FOREGROUND bridge, not the server itself. llmsnap supervises the
+#     command as a child process for the model's whole lifetime, so we:
+#       1. `systemctl start vllm-model@<model>.service` (returns once the container is up;
+#          llmsnap then health-polls `proxy` until vLLM answers), then
+#       2. block with `while systemctl -q is-active ...; do sleep 2; done` so the
+#          child stays alive exactly as long as the unit does. This uses ONLY D-Bus
+#          (no podman socket in the llmsnap container -> preserves least privilege).
+#     `is-active` is a read-only query (not gated by polkit); only start/stop are.
+#   - `cmdStop:` stops the unit; the container exits, `is-active` turns false, the
+#     bridge returns, and llmsnap considers the model stopped.
+#
+# Differences vs the production (GPU) config (see SPECS.md):
+#   - CPU vLLM image (vllm.image -> public.ecr.aws vLLM CI build), NOT the CUDA
+#     `vllm/vllm-openai` image; the model Quadlets carry no `--device
+#     nvidia.com/gpu=all` / `--security-opt label=disable`.
+#   - NO sleep mode: `--enable-sleep-mode` + /sleep + /wake_up are CUDA/ROCm ONLY.
+#     On CPU, llmsnap falls back to a plain cold swap (stop the previous unit, start
+#     the next), driven by the `exclusive: true` group below.
+#   - No GPU-only flags (--gpu-memory-utilization, --kv-cache-dtype fp8) and no
+#     VLLM_SERVER_DEV_MODE (its /sleep,/wake_up dev endpoints are GPU-only too).
+#   - Public models (no HF_TOKEN needed), so this works without vllm.env.
+#   - `--enforce-eager`: this CPU image's torch inductor JIT fails at warmup; eager
+#     mode skips it. See models/qwen05.yaml.
+
+healthCheckTimeout: 1800         # CPU is slow: also covers the FIRST-run image pull
+                                 # + HF weight download + slow CPU model load.
+logLevel: info
+
+models:
+  # Tiny real instruct model: has a chat template AND a tool-call parser, so it
+  # exercises /v1/chat/completions (what the Traefik /v1/* allowlist fronts).
+  qwen05:
+    proxy: http://127.0.0.1:5801                 # PublishPort of vllm-model@qwen05
+    cmd: /bin/sh -c 'systemctl start vllm-model@qwen05.service && while systemctl -q is-active vllm-model@qwen05.service; do sleep 2; done'
+    cmdStop: systemctl stop vllm-model@qwen05.service
+
+  # Ultra-light, DIFFERENT architecture (Llama vs Qwen2) so the swap is genuinely
+  # tested rather than reloading the same weights.
+  smol135:
+    proxy: http://127.0.0.1:5802                 # PublishPort of vllm-model@smol135
+    cmd: /bin/sh -c 'systemctl start vllm-model@smol135.service && while systemctl -q is-active vllm-model@smol135.service; do sleep 2; done'
+    cmdStop: systemctl stop vllm-model@smol135.service
+
+groups:
+  cpu:
+    # No `swap:`/sleep on CPU. `exclusive: true` keeps a single model running at a
+    # time: switching to the other member cold-stops the previous unit (cmdStop)
+    # and starts the next. This validates llmsnap's swap sequencing on CPU.
+    exclusive: true
+    members:
+      - qwen05
+      - smol135

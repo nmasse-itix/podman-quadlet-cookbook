@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: vllm
+    uid: 10032
+    gecos: vLLM inference service
+    home_dir: /var/lib/quadlets/vllm
+    primary_group: itix-svc
