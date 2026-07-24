@@ -18,16 +18,6 @@ dtype: bfloat16
 max-model-len: 4096
 max-num-seqs: 4
 
-##
-## Per-instance fixed host-loopback port for the qwen05 model.
-##
-## Referenced by llmsnap's per-model
-## `proxy: http://127.0.0.1:5801` in config.yaml (llmsnap runs Network=host and
-## reaches the model here). Each model gets its OWN port so two models can be
-## resident at once (GPU sleep mode). Keep it in sync with config.yaml.
-##
-port: 5801
-
 # --enforce-eager: this CPU image's torch inductor JIT fails at warmup; eager
 # mode skips it (fine for a smoke test).
 enforce-eager: true

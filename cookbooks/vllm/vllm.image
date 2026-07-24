@@ -8,8 +8,8 @@ Documentation=https://docs.vllm.ai/
 PartOf=vllm.target
 
 [Image]
-Image=${VLLM_IMAGE}
+Image=${COOKBOOK_VLLM_IMAGE}
 
 [Service]
-# Load the VLLM_IMAGE environment variable
+# Load the COOKBOOK_VLLM_IMAGE environment variable
 EnvironmentFile=/etc/quadlets/vllm/vllm.env

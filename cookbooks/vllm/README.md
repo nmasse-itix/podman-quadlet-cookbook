@@ -93,14 +93,15 @@ as a **non-root container** (`User=10032`, `DropCapability=ALL`, `ReadOnly=true`
   > file. For a new model `<name>` you only add three small pieces:
   >
   > 1. `models/<name>.yaml` — its vLLM engine config (see below).
-  > 2. `vllm-model@<name>.container` — a **symlink** to `vllm-model@.container`
-  >    (so Quadlet instantiates the unit) **and** a
-  >    `dropins/vllm-model@<name>.container.d/10-port.conf` drop-in picking a new
-  >    fixed `PublishPort=127.0.0.1:58NN:8000`.
+  > 2. `models/<name>.env` — its own fixed host-loopback API port
+  >    `COOKBOOK_VLLM_MODEL_PORT=58NN` (fed to vLLM's `--host 127.0.0.1 --port`
+  >    by the shared template; the unit runs `Network=host`, so there is no
+  >    `PublishPort`). Do **not** call it `VLLM_PORT`: that variable is vLLM's
+  >    internal port, not the API port.
   > 3. an entry in `config.yaml` with `proxy: http://127.0.0.1:58NN` and the
   >    `systemctl … vllm-model@<name>.service` `cmd`/`cmdStop`.
   >
-  > Keep the port in sync across the drop-in and `config.yaml`.
+  > Keep the port in sync across `models/<name>.env` and `config.yaml`.
 
 - `models/<name>.yaml` — the **vLLM engine configuration** for one model
   (`model:`, `served-model-name:`, `dtype:`, `max-model-len:`, …). Each model

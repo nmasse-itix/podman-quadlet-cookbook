@@ -15,9 +15,11 @@
 # vllm-polkit.sh).
 #
 # Consequences for each model entry below:
-#   - `proxy:` is REQUIRED and points at the FIXED loopback port the Quadlet
-#     publishes (PublishPort=127.0.0.1:58NN:8000). We do NOT use llmsnap's dynamic
-#     ${PORT}: a Quadlet cannot consume llmsnap's runtime port.
+#   - `proxy:` is REQUIRED and points at the FIXED host-loopback port the model's
+#     vLLM API server binds (`--host 127.0.0.1 --port 58NN`, from
+#     COOKBOOK_VLLM_MODEL_PORT in models/<model>.env; the unit runs Network=host
+#     so there is no PublishPort). We do NOT use llmsnap's dynamic ${PORT}: a
+#     Quadlet cannot consume llmsnap's runtime port.
 #   - `cmd:` is a FOREGROUND bridge, not the server itself. llmsnap supervises the
 #     command as a child process for the model's whole lifetime, so we:
 #       1. `systemctl start vllm-model@<model>.service` (returns once the container is up;
@@ -50,14 +52,14 @@ models:
   # Tiny real instruct model: has a chat template AND a tool-call parser, so it
   # exercises /v1/chat/completions (what the Traefik /v1/* allowlist fronts).
   qwen05:
-    proxy: http://127.0.0.1:5801                 # PublishPort of vllm-model@qwen05
+    proxy: http://127.0.0.1:5801                 # --port of vllm-model@qwen05 (COOKBOOK_VLLM_MODEL_PORT)
     cmd: /bin/sh -c 'systemctl start vllm-model@qwen05.service && while systemctl -q is-active vllm-model@qwen05.service; do sleep 2; done'
     cmdStop: systemctl stop vllm-model@qwen05.service
 
   # Ultra-light, DIFFERENT architecture (Llama vs Qwen2) so the swap is genuinely
   # tested rather than reloading the same weights.
   smol135:
-    proxy: http://127.0.0.1:5802                 # PublishPort of vllm-model@smol135
+    proxy: http://127.0.0.1:5802                 # --port of vllm-model@smol135 (COOKBOOK_VLLM_MODEL_PORT)
     cmd: /bin/sh -c 'systemctl start vllm-model@smol135.service && while systemctl -q is-active vllm-model@smol135.service; do sleep 2; done'
     cmdStop: systemctl stop vllm-model@smol135.service
 

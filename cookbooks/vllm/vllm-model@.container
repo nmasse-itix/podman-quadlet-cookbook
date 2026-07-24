@@ -22,8 +22,9 @@ PartOf=vllm.target
 # `qwen05` for vllm-model@qwen05.service). The per-model differences live OUTSIDE
 # this file:
 #   - engine parameters  -> /etc/quadlets/vllm/models/%i.yaml (mounted below)
-#   - fixed loopback port -> a per-instance drop-in sets PublishPort
-#     (dropins/vllm-model@%i.container.d/10-port.conf)
+#   - fixed loopback port -> COOKBOOK_VLLM_MODEL_PORT in models/%i.env, fed to
+#     vLLM's `--port` in Exec= below. This is a REAL API-server port (Network=host,
+#     so PublishPort does not apply and VLLM_PORT is NOT the API port).
 ContainerName=vllm-%i
 Image=vllm.image
 AutoUpdate=local
@@ -45,14 +46,31 @@ Volume=/etc/quadlets/vllm/models/%i.yaml:/etc/vllm/config.yaml:ro,Z
 EnvironmentFile=/etc/quadlets/vllm/vllm.env
 EnvironmentFile=/etc/quadlets/vllm/models/%i.env
 
-# The CPU image ENTRYPOINT is `vllm serve`; this flag is appended to it. vLLM
-# reads every engine parameter from the mounted config file.
-Exec=--config /etc/vllm/config.yaml
+# The CPU image ENTRYPOINT is `vllm serve`; these flags are appended to it. vLLM
+# reads every engine parameter from the mounted config file; the API server bind
+# address is the ONE thing kept on the command line because it is per-instance
+# (host loopback + fixed port) and CLI args passed after --config win. systemd
+# expands ${COOKBOOK_VLLM_MODEL_PORT} from models/%i.env (loaded into the service
+# environment in [Service] below), exactly like Image=vllm.image expands
+# COOKBOOK_VLLM_IMAGE. --host 127.0.0.1 keeps the API off external interfaces
+# (Network=host); Traefik + API key is the only front door.
+Exec=--config /etc/vllm/config.yaml --host 127.0.0.1 --port ${COOKBOOK_VLLM_MODEL_PORT}
+
+# Readiness: vLLM serves /health once the engine is up.
+HealthCmd=python3 -c "import urllib.request, os; port = os.environ.get('COOKBOOK_VLLM_MODEL_PORT'); urllib.request.urlopen(f'http://127.0.0.1:{port}/health')"
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=600s
+HealthRetries=3
 
 [Service]
 # vLLM cold start (weights download on first run + slow CPU load). llmsnap does
 # its own HTTP health polling on top (healthCheckTimeout in config.yaml).
 TimeoutStartSec=1800
 
-# Load the VLLM_IMAGE environment variable
+# Load COOKBOOK_VLLM_IMAGE (for the Image=vllm.image indirection) and
+# COOKBOOK_VLLM_MODEL_PORT (for the ${...} expansion in Exec=) into the SERVICE
+# environment. systemd only expands variables it sees here; the [Container]
+# EnvironmentFile= lines above feed the CONTAINER, not the unit's own expansion.
 EnvironmentFile=/etc/quadlets/vllm/vllm.env
+EnvironmentFile=/etc/quadlets/vllm/models/%i.env
