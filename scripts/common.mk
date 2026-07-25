@@ -436,7 +436,12 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 				# Dependency is up-to-date. \
 				continue; \
 			fi ; \
-			run $(MAKE) -C $(COOKBOOKS_DIR)/$$dep build/$$dep.ign build/$$dep-examples.ign ; \
+			# NB: this recipe exports SYSTEMD_{ENABLE,START}_UNITS (see the \
+			# target-specific `export` lines below the rule) for generate-tarball.sh. \
+			# Strip them here so the dependency's own `?=` recomputes them instead of \
+			# inheriting *our* units and mislabelling its metadata.json / tarball. \
+			run env -u SYSTEMD_ENABLE_UNITS -u SYSTEMD_START_UNITS -u SYSTEMD_MAIN_UNIT_NAMES \
+				$(MAKE) -C $(COOKBOOKS_DIR)/$$dep build/$$dep.ign build/$$dep-examples.ign ; \
 		done; \
 		run make install-config; \
 		YQ_FILES="$$(if [ -f "overlay.bu" ]; then echo "- overlay.bu"; else echo "-"; fi)"; \
