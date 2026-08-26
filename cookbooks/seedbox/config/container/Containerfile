@@ -1,0 +1,77 @@
+# LibreWolf, displayed on a remote desktop through waypipe (Wayland over SSH).
+#
+# waypipe is installed *here* rather than on the Fedora CoreOS host: the waypipe
+# server has to share a mount namespace with the browser (it creates the Wayland
+# socket the browser connects to), and putting it in the image keeps the host a
+# stock, immutable CoreOS with no layered packages. It also pins the waypipe
+# version, which matters: waypipe 0.9 (C) and 0.10+ (Rust) do not interoperate,
+# and the client and server versions have to match.
+FROM quay.io/fedora/fedora:44
+
+COPY librewolf.repo /etc/yum.repos.d/librewolf.repo
+
+# The font set is pinned explicitly and must stay identical across rebuilds: the
+# list of installed fonts is a fingerprinting vector, and a set that drifts every
+# night would make this browser a little more recognisable every day.
+#
+# mesa-dri-drivers provides llvmpipe -- there is no GPU in this VM.
+#
+# The icon theme, the extra gdk-pixbuf loaders and the MIME database are weak
+# dependencies, and they are not optional here: without them GTK cannot resolve
+# an icon, falls back to image-missing.svg, fails to load that too, and aborts
+# the whole browser with
+# "Gtk:ERROR:gtkiconhelper.c:495:ensure_surface_for_gicon: assertion failed".
+RUN dnf install -y --setopt=install_weak_deps=False \
+        librewolf \
+        waypipe \
+        adwaita-icon-theme \
+        hicolor-icon-theme \
+        gdk-pixbuf2-modules-extra \
+        shared-mime-info \
+        util-linux \
+        dejavu-sans-fonts dejavu-serif-fonts dejavu-sans-mono-fonts \
+        liberation-sans-fonts liberation-serif-fonts liberation-mono-fonts \
+        google-noto-color-emoji-fonts \
+        mesa-dri-drivers \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+# See the header of itix-hardening.cfg for why this is appended to LibreWolf's
+# own AutoConfig file instead of living in librewolf.overrides.cfg (which would
+# sit in the persistent profile volume and escape the nightly rebuild).
+COPY itix-hardening.cfg /tmp/itix-hardening.cfg
+RUN cat /tmp/itix-hardening.cfg >> /usr/share/librewolf/librewolf.cfg \
+    && rm -f /tmp/itix-hardening.cfg
+
+# Two sandboxes fight over CAP_SYS_CHROOT in here, and setpriv (util-linux) is
+# what reconciles them:
+#
+#  - Firefox's content sandbox chroots itself. It does so inside a fresh user
+#    namespace, where it holds every capability still present in the *bounding*
+#    set -- so CAP_SYS_CHROOT has to be in the bounding set, or content
+#    processes die with "Sandbox: chroot: EPERM".
+#  - bubblewrap, which glycin (Fedora's SVG image loader) uses, refuses to run
+#    at all when the calling process holds capabilities without being setuid:
+#    "bwrap: Unexpected capabilities but not setuid, old file caps config?".
+#    GTK then fails to load an icon and aborts the browser.
+#
+# podman's --cap-add puts the capability in the *ambient* set too when the
+# container runs as a non-root user, which is exactly what bubblewrap objects
+# to. Dropping ambient and inheritable capabilities needs no privilege, and
+# leaves the bounding set untouched, so both sandboxes get what they want.
+ENTRYPOINT [ "/usr/bin/setpriv", "--inh-caps=-all", "--ambient-caps=-all", "--" ]
+
+# XDG_RUNTIME_DIR for the browser user: waypipe creates its Wayland socket in
+# there. podman does not mount a tmpfs over /run, so a directory baked into the
+# image with the right ownership is writable, and disappears with the container.
+#
+# The uid/gid are hardcoded, like everywhere else in this cookbook; they have to
+# match BROWSER_UID/BROWSER_GID in browser.conf.
+RUN install -d -m 0755 -o root -g root /run/user \
+    && install -d -m 0700 -o 10017 -g 10000 /run/user/10017
+
+# The profile and the download directory are bind-mounted at run time.
+VOLUME /home/browser /downloads
+
+# The shim runs "waypipe ... server -- librewolf" through the entrypoint above.
+CMD [ "librewolf" ]

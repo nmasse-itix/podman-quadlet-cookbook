@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the LibreWolf browser image
+PartOf=seedbox.target
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=seedbox.target

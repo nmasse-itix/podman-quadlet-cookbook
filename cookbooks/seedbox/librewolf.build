@@ -1,0 +1,11 @@
+[Unit]
+Description=Build of the LibreWolf browser image
+Documentation=https://librewolf.net/
+Wants=network-online.target
+After=network-online.target fedora-image.service
+Requires=fedora-image.service
+
+[Build]
+File=/etc/quadlets/seedbox/container/Containerfile
+ImageTag=localhost/librewolf:latest
+SetWorkingDirectory=/etc/quadlets/seedbox/container

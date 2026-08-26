@@ -1,0 +1,11 @@
+# LibreWolf is not packaged in Fedora. This is the upstream repository, which
+# publishes both x86_64 and aarch64 (the seedbox VM runs on Ampere hardware).
+#
+# Both the packages and the repository metadata are GPG-checked.
+[librewolf]
+name=LibreWolf Software Repository
+baseurl=https://repo.librewolf.net
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://repo.librewolf.net/pubkey.gpg
+enabled=1
