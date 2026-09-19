@@ -1,0 +1,13 @@
+[Unit]
+Description=Home Assistant Service Target
+Documentation=man:systemd.target(5)
+Requires=postgresql.target home-assistant-init.service home-assistant.service
+After=postgresql.target home-assistant-init.service home-assistant.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+# Only start if Home Assistant has been configured
+ConditionPathExists=/etc/quadlets/home-assistant/configuration.yaml
+
+[Install]
+WantedBy=multi-user.target

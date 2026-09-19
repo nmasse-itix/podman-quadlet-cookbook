@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: home-assistant
+    uid: 10034
+    gecos: Home Assistant
+    home_dir: /var/lib/quadlets/home-assistant
+    primary_group: itix-svc
