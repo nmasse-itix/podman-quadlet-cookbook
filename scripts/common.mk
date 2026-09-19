@@ -472,12 +472,14 @@ $(TOP_LEVEL_DIR)/build/local.ign: $(TOP_LEVEL_DIR)/local.bu
 .INTERMEDIATE: build/fcos-dev.bu build/fcos-test.bu
 
 # Generate the Butane specs for development and testing by merging the current project's spec with those of the dependencies.
-# The development spec also includes the examples of the dependencies.
-# Whereas the testing spec only includes the main specs of the dependencies.
+# The development spec also includes the examples of the current project and of its dependencies.
+# Whereas the testing spec only includes the main specs of the current project and of its dependencies.
 build/fcos-dev.bu build/fcos-test.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
 build/fcos-dev.bu: DEPS := $(DEPS) $(addsuffix -examples,$(DEPS))
+build/fcos-test.bu: SELF := $(PROJECT_NAME)
+build/fcos-dev.bu: SELF := $(PROJECT_NAME) $(PROJECT_NAME)-examples
 build/fcos-dev.bu build/fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh build
-	$(SCRIPTS_DIR)/default-butane-spec.sh $(PROJECT_NAME) $(DEPS) > $@
+	$(SCRIPTS_DIR)/default-butane-spec.sh $(SELF) $(DEPS) > $@
 
 # Generate the final Fedora CoreOS ignition files (dev & test) by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
 build/fcos-dev.ign: $(TOP_LEVEL_DIR)/build/local.ign build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
