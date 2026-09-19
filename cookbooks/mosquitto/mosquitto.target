@@ -1,0 +1,14 @@
+[Unit]
+Description=Mosquitto Service Target
+Documentation=man:systemd.target(5)
+Requires=traefik.target mosquitto.service
+After=traefik.target mosquitto.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+# Only start once Mosquitto has been configured (the operator provides the password file)
+ConditionPathExists=/etc/quadlets/mosquitto/passwd
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: mosquitto
+    uid: 10033
+    gecos: Mosquitto MQTT broker
+    home_dir: /var/lib/quadlets/mosquitto
+    primary_group: itix-svc
