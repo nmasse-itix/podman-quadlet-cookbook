@@ -1,0 +1,31 @@
+# Traefik dynamic configuration contributed by the mosquitto cookbook.
+#
+# TLS is terminated HERE (on the https / :443 entry point) and the plaintext MQTT
+# stream is forwarded to the broker on loopback. This is a TCP router, not an HTTP
+# one. It coexists on the https entry point with the HTTP routers of the other
+# cookbooks, which match HostSNI(`*`) implicitly.
+#
+# In production the SNI host name and the certificate resolver are site values,
+# injected by the operator via an overlay into /etc/quadlets/traefik/conf.d/. This
+# shipped fragment uses the bare SNI `mqtt` and a self-signed certificate so it is
+# testable as-is.
+tcp:
+  routers:
+    mosquitto:
+      # A TCP router whose HostSNI is not `*` REQUIRES a tls section (below).
+      rule: "HostSNI(`mqtt`)"
+      entryPoints:
+      - https
+      service: "mosquitto"
+      # Bare `tls: {}` makes Traefik serve its own self-signed certificate, which is
+      # what makes this fragment testable as shipped. In production, uncomment the
+      # certResolver below to obtain a real Let's Encrypt certificate (site value).
+      tls: {}
+      #tls:
+      #  certResolver: le
+  services:
+    mosquitto:
+      loadBalancer:
+        # A TCP service uses `address:`, never `url:`.
+        servers:
+        - address: "127.0.0.1:1883"

@@ -1,0 +1,57 @@
+[Unit]
+Description=Mosquitto MQTT broker
+Documentation=https://mosquitto.org/documentation/
+After=network.target var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Only start once Mosquitto has been configured (the operator provides the password file)
+ConditionPathExists=/etc/quadlets/mosquitto/passwd
+
+# Start/stop this unit when the target is started/stopped
+PartOf=mosquitto.target
+
+[Container]
+ContainerName=mosquitto
+Image=mosquitto.image
+AutoUpdate=registry
+
+# No need for root privileges: the broker binds 1883 (> 1024) as an unprivileged user.
+# The upstream entrypoint only chowns /mosquitto when it runs as root; as UID 10033 it
+# just execs the broker, so every directory it touches must already be owned by 10033:10000
+# (that is what tmpfiles.d and the config install ownership take care of).
+User=10033
+Group=10000
+
+# Network configuration (host networking is the convention across this repository)
+Network=host
+
+# Run the broker against the packaged configuration. Host and container paths are kept
+# identical so that password_file, acl_file, persistence_location and include_dir all
+# resolve to the same location inside and outside the container.
+Exec=/usr/sbin/mosquitto -c /etc/quadlets/mosquitto/mosquitto.conf
+
+# Configuration (read-only): mosquitto.conf, conf.d/ fragments and the operator-provided
+# passwd / acl files all live under /etc/quadlets/mosquitto.
+Volume=/etc/quadlets/mosquitto:/etc/quadlets/mosquitto:ro,Z
+
+# Precious data (retained messages + client sessions) on the virtiofs mount, so the
+# host's ZFS snapshots and backups pick it up.
+Volume=/var/lib/virtiofs/data/mosquitto:/var/lib/virtiofs/data/mosquitto:z
+
+# Health check: a bare TCP connect to the listener. It needs no credentials (which the
+# operator may not have provided yet), which is why it is preferred over a credentialed
+# mosquitto_sub on $SYS/#.
+HealthCmd=nc -z 127.0.0.1 1883
+HealthInterval=30s
+HealthTimeout=5s
+HealthStartPeriod=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=mosquitto.target

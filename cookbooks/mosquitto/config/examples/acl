@@ -1,0 +1,18 @@
+# Example Mosquitto ACL file (DEVELOPMENT ONLY - do NOT use in production).
+#
+# In production this file is provided by the operator at
+# /etc/quadlets/mosquitto/acl (mode 0640, owned by 10033:10000).
+#
+# With acl_file set and allow_anonymous false, access is default-deny: an
+# authenticated user can only touch the topics granted to it here. Tighten these
+# rules per client in production (e.g. restrict zigbee2mqtt to the zigbee2mqtt/#
+# tree). The examples below grant each development user full access.
+
+user homeassistant
+topic readwrite #
+
+user zigbee2mqtt
+topic readwrite #
+
+user esphome
+topic readwrite #

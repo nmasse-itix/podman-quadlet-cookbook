@@ -1,0 +1,11 @@
+[Unit]
+Description=podman pull docker.io/library/eclipse-mosquitto
+Documentation=https://hub.docker.com/_/eclipse-mosquitto
+
+# Only pull if Mosquitto has been configured (the operator provides the password file)
+ConditionPathExists=/etc/quadlets/mosquitto/passwd
+
+[Image]
+# The ":2" tag is a multi-architecture manifest (amd64 + arm64, checked 2026-09-19,
+# version 2.1.2), which is required to run on the aarch64 target.
+Image=docker.io/library/eclipse-mosquitto:2
