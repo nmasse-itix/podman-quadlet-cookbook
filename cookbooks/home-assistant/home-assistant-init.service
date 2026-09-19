@@ -15,36 +15,10 @@ Before=home-assistant.service
 Type=oneshot
 RemainAfterExit=yes
 
-# Bootstrap /config ONLY where a file is absent. Home Assistant owns /config once
-# it has started: after first boot the live copies win and nothing here is touched
-# again. install_if_absent copies the operator's bootstrap files; stub_if_absent
-# creates the empty include targets configuration.yaml references
-# (automations.yaml / scenes.yaml / scripts.yaml) so Home Assistant does not fall
-# back to recovery mode on an otherwise-empty /config.
-ExecStart=/bin/sh -c '\
-    set -eu; \
-    src=/etc/quadlets/home-assistant; \
-    dst=/var/lib/virtiofs/data/home-assistant; \
-    install_if_absent() { \
-        if [ -f "$src/$1" ] && [ ! -e "$dst/$1" ]; then \
-            echo "Bootstrapping $dst/$1 from $src/$1"; \
-            install -m "$2" -o 10034 -g 10000 "$src/$1" "$dst/$1"; \
-        else \
-            echo "Keeping existing $dst/$1 (Home Assistant owns it) or no bootstrap provided"; \
-        fi; \
-    }; \
-    stub_if_absent() { \
-        if [ ! -e "$dst/$1" ]; then \
-            echo "Creating empty $dst/$1"; \
-            echo "$2" > "$dst/$1"; \
-            chown 10034:10000 "$dst/$1"; \
-        fi; \
-    }; \
-    install_if_absent configuration.yaml 0644; \
-    install_if_absent secrets.yaml 0600; \
-    stub_if_absent automations.yaml "[]"; \
-    stub_if_absent scenes.yaml "[]"; \
-    stub_if_absent scripts.yaml "{}"'
+# Bootstrap /config from the operator's templates (see init.sh for details). The
+# script only ever creates files that are absent, so Home Assistant's live copies
+# are never overwritten.
+ExecStart=/etc/quadlets/home-assistant/init.sh
 
 [Install]
 WantedBy=home-assistant.target

@@ -4,8 +4,11 @@ Documentation=https://www.home-assistant.io/
 After=network.target var-lib-virtiofs-data.mount home-assistant-init.service
 Requires=var-lib-virtiofs-data.mount home-assistant-init.service
 
-# Only start if Home Assistant has been configured
-ConditionPathExists=/etc/quadlets/home-assistant/configuration.yaml
+# Only start once Home Assistant has been bootstrapped: the live configuration
+# lives in /config (populated by home-assistant-init.service on first boot, or
+# already present if Home Assistant was configured before). Past that point the
+# bootstrap files in /etc/quadlets are no longer needed.
+ConditionPathExists=/var/lib/virtiofs/data/home-assistant/configuration.yaml
 
 # Start/stop this unit when the target is started/stopped
 PartOf=home-assistant.target

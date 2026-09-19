@@ -40,9 +40,12 @@ templates).
 | `/etc/quadlets/home-assistant/configuration.yaml` | Bootstrap Home Assistant configuration (copied to `/config`).  |
 | `/etc/quadlets/home-assistant/secrets.yaml`       | Bootstrap secrets, incl. the recorder database URL + password. |
 
-Nothing starts until `/etc/quadlets/home-assistant/configuration.yaml` exists (the
-`home-assistant.target`, `home-assistant.service` and `home-assistant-init.service` units
-all guard on it with `ConditionPathExists`).
+`home-assistant-init.service` only bootstraps `/config` when
+`/etc/quadlets/home-assistant/configuration.yaml` is present; `home-assistant.service` only
+starts once `/config/configuration.yaml` exists (created by the init unit on first boot, or
+already present if Home Assistant was configured before). So on a fresh system nothing runs
+until the operator provides the bootstrap files, and once Home Assistant owns `/config` the
+files under `/etc/quadlets/home-assistant/` are no longer required.
 
 Ready-to-use examples are provided under `config/examples/`. They are installed to
 `/etc/quadlets/home-assistant/` during development and testing only, and are **not** part
