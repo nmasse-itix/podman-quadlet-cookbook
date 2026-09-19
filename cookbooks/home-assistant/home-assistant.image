@@ -1,0 +1,7 @@
+[Unit]
+Description=podman pull ghcr.io/home-assistant/home-assistant
+Documentation=https://www.home-assistant.io/installation/
+
+[Image]
+# Multi-architecture image (amd64 + arm64), so it runs on the aarch64 target too.
+Image=ghcr.io/home-assistant/home-assistant:stable

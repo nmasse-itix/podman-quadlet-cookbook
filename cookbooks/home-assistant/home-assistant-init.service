@@ -1,0 +1,24 @@
+[Unit]
+Description=Home Assistant - Bootstrap /config from the operator-provided templates
+Documentation=https://www.home-assistant.io/docs/configuration/
+After=var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Only run if the operator provided a bootstrap configuration
+ConditionPathExists=/etc/quadlets/home-assistant/configuration.yaml
+
+# Start/stop this unit when the target is started/stopped, before the service
+PartOf=home-assistant.target
+Before=home-assistant.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Bootstrap /config from the operator's templates (see init.sh for details). The
+# script only ever creates files that are absent, so Home Assistant's live copies
+# are never overwritten.
+ExecStart=/etc/quadlets/home-assistant/init.sh
+
+[Install]
+WantedBy=home-assistant.target

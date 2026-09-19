@@ -1,0 +1,56 @@
+##
+## Home Assistant BOOTSTRAP configuration
+##
+## This file is a TEMPLATE. It is copied to /config/configuration.yaml on first
+## boot ONLY if that file does not already exist (see home-assistant-init.service).
+## After first boot, /config/configuration.yaml is the LIVE copy that Home
+## Assistant owns and edits from its web interface; this template becomes inert.
+##
+## Site-specific values (external URL, trusted proxy addresses, time zone, ...)
+## are meant to be injected downstream by the operator overlay, not hard-coded
+## here. The values below are only enough for an unattended first start.
+##
+
+# Loads the default set of integrations (frontend, config UI, backup, ...).
+# Do not remove.
+default_config:
+
+# Front-end themes (kept so themes dropped in /config/themes are picked up).
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Home Assistant runs behind the Traefik reverse proxy. Without the two settings
+# below it answers "400 Bad Request" to every proxied request. `trusted_proxies`
+# must list the address Traefik connects FROM; here Traefik shares the host
+# network and forwards to 127.0.0.1, so the loopback addresses are correct.
+# Adjust if your proxy connects from another address.
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1
+
+# Long-term history is stored in PostgreSQL (the `postgresql` cookbook). The
+# connection string (with its password) is kept out of this file via !secret.
+recorder:
+  db_url: !secret recorder_db_url
+
+# UI-managed automations, scripts and scenes (edited from the web interface).
+automation ui: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Weekly native backup. Home Assistant's own backup format is the only one its
+# interface can restore and the one that survives a major-version upgrade. It is
+# written to /config/backups, i.e. inside the virtiofs perimeter.
+automation backup:
+  - alias: "Weekly native backup"
+    trigger:
+      - platform: time
+        at: "04:30:00"
+    condition:
+      - condition: time
+        weekday:
+          - sun
+    action:
+      - service: backup.create

@@ -1,0 +1,16 @@
+http:
+  routers:
+    home-assistant:
+      rule: "Host(`home-assistant`)"
+      entryPoints:
+      - http
+      #- https
+      middlewares:
+      service: "home-assistant"
+      #tls:
+      #  certResolver: le
+  services:
+    home-assistant:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8123"

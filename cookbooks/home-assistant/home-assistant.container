@@ -1,0 +1,57 @@
+[Unit]
+Description=Home Assistant
+Documentation=https://www.home-assistant.io/
+After=network.target var-lib-virtiofs-data.mount home-assistant-init.service
+Requires=var-lib-virtiofs-data.mount home-assistant-init.service
+
+# Only start once Home Assistant has been bootstrapped: the live configuration
+# lives in /config (populated by home-assistant-init.service on first boot, or
+# already present if Home Assistant was configured before). Past that point the
+# bootstrap files in /etc/quadlets are no longer needed.
+ConditionPathExists=/var/lib/virtiofs/data/home-assistant/configuration.yaml
+
+# Start/stop this unit when the target is started/stopped
+PartOf=home-assistant.target
+
+[Container]
+ContainerName=home-assistant
+Image=home-assistant.image
+AutoUpdate=registry
+
+# No need for root privileges: the s6-overlay v3 entrypoint detects the non-root
+# UID, fixes up /run itself, then runs Home Assistant as this user. Verified on
+# ghcr.io/home-assistant/home-assistant:stable (2026.9.3): the process runs as
+# host UID 10034 and owns everything it writes under /config.
+User=10034
+Group=10000
+
+# Host networking, as everywhere in this repository. Home Assistant also needs it
+# for local discovery (mDNS/SSDP) of devices on the LAN.
+Network=host
+
+# Precious data: Home Assistant owns /config (configuration.yaml, .storage/,
+# native backups, ...). It lives on the virtiofs mount so it inherits the
+# hypervisor's ZFS snapshot and backup levels.
+Volume=/var/lib/virtiofs/data/home-assistant:/config:z
+
+# Health check: /manifest.json is served without authentication.
+HealthCmd=curl -sSf http://127.0.0.1:8123/manifest.json
+HealthInterval=30s
+HealthTimeout=10s
+# Cold start (dependency install + recorder schema migration) takes one to three
+# minutes, so probe generously before declaring the container unhealthy.
+HealthStartPeriod=180s
+HealthRetries=10
+
+[Service]
+Restart=always
+RestartSec=10
+# First boot may pull the image and migrate the recorder schema; give it room.
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+# Wait for PostgreSQL to be ready on localhost (recorder backend).
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=home-assistant.target
