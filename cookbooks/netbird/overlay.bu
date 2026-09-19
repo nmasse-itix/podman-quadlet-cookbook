@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: netbird
+    uid: 10035
+    gecos: NetBird control plane
+    home_dir: /var/lib/quadlets/netbird
+    primary_group: itix-svc

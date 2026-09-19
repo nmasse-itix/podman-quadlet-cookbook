@@ -1,0 +1,12 @@
+[Unit]
+Description=podman pull docker.io/netbirdio/dashboard
+Documentation=https://hub.docker.com/r/netbirdio/dashboard
+
+# Only pull once NetBird has been configured.
+ConditionPathExists=/etc/quadlets/netbird/dashboard.env
+
+[Image]
+# The "v2.92.0" tag is a multi-architecture manifest (amd64 + arm64 + arm/v7, checked
+# 2026-09-19), which is required to run on the aarch64 target.
+# arm64 digest: sha256:c2f9a1251e069d50b67dc8aa40821ce890d6aa09e1e1876434cb70892bd78e3f
+Image=docker.io/netbirdio/dashboard:v2.92.0

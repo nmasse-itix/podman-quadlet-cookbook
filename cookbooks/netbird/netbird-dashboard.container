@@ -1,0 +1,47 @@
+[Unit]
+Description=NetBird Dashboard
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+After=network.target
+
+# dashboard.env carries the OIDC client settings and the management API endpoint.
+ConditionPathExists=/etc/quadlets/netbird/dashboard.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=netbird.target
+
+[Container]
+ContainerName=netbird-dashboard
+Image=netbird-dashboard.image
+AutoUpdate=registry
+
+# The upstream dashboard image serves the SPA with nginx bound to port 80 as root, and it
+# ships no configurable HTTP port (only the CSP-patching init script relies on the built-in
+# default.conf). Rather than fork the image, it runs in its own network namespace (NOT host
+# networking) so nginx keeps port 80 inside the container, and the port is published only on
+# loopback for Traefik. As there is no rootless tag with a stable semver, the rootful image
+# is mapped to the non-root host UID 10035 via UIDMap/GIDMap (same approach as nextcloud).
+PublishPort=127.0.0.1:8080:80
+UIDMap=0:1000000:65535
+UIDMap=+0:10035:1
+GIDMap=0:1000000:65535
+GIDMap=+0:10000:1
+
+# All dashboard settings (OIDC client, management endpoint, LETSENCRYPT_DOMAIN=none so the
+# image serves plain HTTP and never tries to obtain its own certificate) come from here.
+EnvironmentFile=/etc/quadlets/netbird/dashboard.env
+
+# Health check: nginx serves the SPA on port 80 inside the container namespace.
+HealthCmd=wget -q -O /dev/null http://127.0.0.1:80/
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=15s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=netbird.target
