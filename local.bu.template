@@ -1,5 +1,21 @@
 variant: fcos
 version: 1.4.0
+storage:
+  disks:
+  - device: /dev/vdb
+    wipe_table: false
+    partitions:
+    # Specify the partition number so that FCOS do not try to create a new
+    # partition at each VM redeployment.
+    - number: 1
+      size_mib: 0
+      start_mib: 0
+      label: var
+  filesystems:
+  - path: /var
+    device: /dev/disk/by-partlabel/var
+    format: xfs
+    with_mount_unit: true
 passwd:
   users:
   - name: john

@@ -2,6 +2,7 @@
 *.ign
 !fcos.bu
 !overlay.bu
+!overlay-examples.bu
 __pycache__/
 .pytest_cache/
 **/build/*.tar.gz
