@@ -1,0 +1,80 @@
+{
+    "Stuns": [
+        {
+            "Proto": "udp",
+            "URI": "stun:netbird:3478",
+            "Username": "",
+            "Password": null
+        }
+    ],
+    "TURNConfig": {
+        "Turns": [
+            {
+                "Proto": "udp",
+                "URI": "turn:netbird:3478",
+                "Username": "self",
+                "Password": "ebfea0b4d8e2443952b950a2d6ac600e"
+            }
+        ],
+        "CredentialsTTL": "12h",
+        "Secret": "ebfea0b4d8e2443952b950a2d6ac600e",
+        "TimeBasedCredentials": false
+    },
+    "Relay": {
+        "Addresses": ["rels://netbird:443/relay"],
+        "CredentialsTTL": "24h",
+        "Secret": "7JIlAKQH6IbK2tNftT8FM3FoH0cadUhiO/q/GubbxVM="
+    },
+    "Signal": {
+        "Proto": "https",
+        "URI": "netbird:443",
+        "Username": "",
+        "Password": null
+    },
+    "ReverseProxy": {
+        "TrustedHTTPProxies": [],
+        "TrustedHTTPProxiesCount": 0,
+        "TrustedPeers": []
+    },
+    "Datadir": "",
+    "DataStoreEncryptionKey": "Xd4UL2rB7VGLpERH9RW1mf8PeQz8/vporOvfzgtJBTM=",
+    "StoreConfig": {
+        "Engine": "postgres"
+    },
+    "HttpConfig": {
+        "Address": "0.0.0.0:33073",
+        "AuthIssuer": "https://idp.example.test/realms/netbird",
+        "AuthAudience": "netbird-client",
+        "AuthKeysLocation": "https://idp.example.test/realms/netbird/protocol/openid-connect/certs",
+        "AuthUserIDClaim": "",
+        "CertFile": "",
+        "CertKey": "",
+        "IdpSignKeyRefreshEnabled": false,
+        "OIDCConfigEndpoint": ""
+    },
+    "IdpManagerConfig": {
+        "ManagerType": "none"
+    },
+    "DeviceAuthorizationFlow": {
+        "Provider": "none",
+        "ProviderConfig": {
+            "Audience": "netbird-client",
+            "ClientID": "netbird-client",
+            "Scope": "openid",
+            "UseIDToken": false
+        }
+    },
+    "PKCEAuthorizationFlow": {
+        "ProviderConfig": {
+            "Audience": "netbird-client",
+            "ClientID": "netbird-client",
+            "ClientSecret": "",
+            "Domain": "",
+            "AuthorizationEndpoint": "https://idp.example.test/realms/netbird/protocol/openid-connect/auth",
+            "TokenEndpoint": "https://idp.example.test/realms/netbird/protocol/openid-connect/token",
+            "Scope": "openid profile email offline_access",
+            "RedirectURLs": ["http://localhost:53000"],
+            "UseIDToken": false
+        }
+    }
+}

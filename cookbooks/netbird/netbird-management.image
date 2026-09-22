@@ -1,0 +1,13 @@
+[Unit]
+Description=podman pull docker.io/netbirdio/management
+Documentation=https://hub.docker.com/r/netbirdio/management
+
+# Only pull once NetBird has been configured.
+ConditionPathExists=/etc/quadlets/netbird/management.json
+ConditionPathExists=/etc/quadlets/netbird/management.env
+
+[Image]
+# The ":0.79.0" tag is a multi-architecture manifest (amd64 + arm64 + arm/v7, checked
+# 2026-09-19), which is required to run on the aarch64 target.
+# arm64 digest: sha256:175b3d7879688d55c1229817508e5291676fcfe979cd52789ea6f618e7dbd82c
+Image=docker.io/netbirdio/management:0.79.0
