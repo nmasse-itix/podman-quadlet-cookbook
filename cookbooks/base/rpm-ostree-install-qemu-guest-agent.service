@@ -4,6 +4,7 @@ Wants=network-online.target
 After=network-online.target
 Before=zincati.service
 ConditionPathExists=!/usr/bin/qemu-ga
+ConditionVirtualization=kvm
 
 # Only run on Fedora CoreOS
 ConditionOSRelease=ID=fedora
