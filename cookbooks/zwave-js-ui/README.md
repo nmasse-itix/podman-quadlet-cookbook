@@ -198,7 +198,39 @@ a restart loop fixes.
   artifact. What the external file buys is not secrecy: it is that the authoritative copy lives
   outside the application, is restorable from a vault, and cannot be edited from the web
   interface.
+- **Only `external-settings.json` is mounted into the container, never the configuration
+  directory.** `:Z` relabels what it mounts to `container_file_t`, recursively and on disk, and
+  `init.sh` lives in that directory. Mounting the directory therefore leaves a script systemd
+  can no longer execute: `zwave-js-ui-init.service` fails with `203/EXEC` at every boot *after
+  the first start of the container*, and the container's `Requires=` on it keeps the container
+  down too. A machine that survived its installation stops surviving a reboot, which is the
+  worst shape a fault can take. The `mosquitto` cookbook mounts its whole directory and is fine
+  because it keeps no script there; this one does.
 - **No Traefik and no TLS.** See "What this cookbook does NOT do".
+
+## Clearing the store
+
+The seed is a **first-boot** mechanism: `init.sh` writes `store/settings.json` only when it is
+absent, because Z-Wave JS UI owns that file afterwards. Two consequences for an operator who
+wipes the store, or who deletes `settings.json` to force the settings of
+`external-settings.json` back in — after rotating the security keys, for instance, since
+Z-Wave JS UI keeps its own copy of the old ones:
+
+- **Delete the file with the container stopped, then restart the init service explicitly**, in
+  this order. `systemctl restart zwave-js-ui.target` is not enough: the init service is
+  `RemainAfterExit=yes` and already active, so it does not run again, and Z-Wave JS UI then
+  writes a `settings.json` that holds the external settings and **not** the seeded ones.
+- The symptom of getting it wrong is a container that is `unhealthy` forever with a driver that
+  is perfectly happy: no `mqtt` section means no MQTT client, and `/health` answers 500. And,
+  more quietly, `gateway.authEnabled` is gone with it, so the web interface stops asking for a
+  password.
+
+```sh
+systemctl stop zwave-js-ui.service
+rm /var/lib/virtiofs/data/zwave-js-ui/settings.json
+systemctl restart zwave-js-ui-init.service     # seeds it again
+systemctl start zwave-js-ui.service
+```
 
 ## Usage
 

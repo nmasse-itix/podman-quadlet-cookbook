@@ -59,9 +59,19 @@ Environment=STORE_DIR=/var/lib/virtiofs/data/zwave-js-ui
 # SESSION_SECRET and the initial administrator credentials (site secrets).
 EnvironmentFile=/etc/quadlets/zwave-js-ui/zwave-js-ui.env
 
-# Configuration (read-only), at the same path inside and outside the container so
-# that ZWAVE_EXTERNAL_SETTINGS names one path only.
-Volume=/etc/quadlets/zwave-js-ui:/etc/quadlets/zwave-js-ui:ro,Z
+# Configuration (read-only): the ONE file the container reads, at the same path
+# inside and outside so that ZWAVE_EXTERNAL_SETTINGS names one path only.
+#
+# Never mount the whole /etc/quadlets/zwave-js-ui directory here. ":Z" relabels
+# what it mounts to container_file_t, recursively and on disk, and init.sh lives
+# in that directory: systemd can no longer execute it, so
+# zwave-js-ui-init.service fails 203/EXEC at every boot after the first start of
+# this container, and the Requires= above then keeps the container down with it.
+# A machine that survived its install stops surviving a reboot.
+#
+# ConditionPathExists on this file above is also what keeps podman from creating
+# a DIRECTORY at this path when the operator has not provided the file.
+Volume=/etc/quadlets/zwave-js-ui/external-settings.json:/etc/quadlets/zwave-js-ui/external-settings.json:ro,Z
 
 # Precious data: the store holds the node names, the associations, the NVM
 # backups of the controller and the users of the web interface. It lives on the
