@@ -27,8 +27,9 @@ This cookbook:
 - Supports automatic container image updates via Podman auto-update.
 
 The image is `ghcr.io/zwave-js/zwave-js-ui:11`, a multi-architecture manifest (amd64 +
-arm64, verified 2026-09-26, version 11.24.1). It is named in the container unit rather than in
-a `.image` unit — see the deviations below, and the reason is boot resilience, not taste.
+arm64, verified 2026-09-26, version 11.24.1). It is pulled by `zwave-js-ui.image`, which the
+container **wants** rather than requires — see the deviations below, and the reason is boot
+resilience, not taste.
 
 ## What this cookbook does NOT do
 
@@ -199,17 +200,41 @@ a restart loop fixes.
   artifact. What the external file buys is not secrecy: it is that the authoritative copy lives
   outside the application, is restorable from a vault, and cannot be edited from the web
   interface.
-- **No `.image` unit: the image is named in the container.** A `.image` unit runs
-  `podman image pull`, which contacts the registry even when the image is already in local
-  storage. A machine that boots before its network does — a power cut, a switch slower than the
-  machine, a cable plugged in after power-on — fails that pull with
-  `Temporary failure in name resolution`, and the `Requires=` that quadlet generates on the
-  `.image` unit takes the container down with it. **A failed dependency is never retried**:
-  `Restart=always` only ever applies to a unit that started at least once, so the service stays
-  down until someone notices. Naming the image in the container instead lets podman resolve it
-  at start with its default `--pull=missing`: the local image starts with no registry involved,
-  and a genuinely missing image fails the container, which `Restart=` then retries until the
-  network is there. Auto-update is unaffected — it reads the container's label.
+- **The container wants the `.image` unit, it does not require it — and it names the image
+  reference, not the unit.** This is the deviation, and it is the one this cookbook has already
+  paid for.
+
+  A `.image` unit runs `podman image pull`, which contacts the registry even when the image is
+  already in local storage. A machine that boots before its network does — a PoE port whose
+  switch takes a minute to forward, an uplink that comes back after the machine — fails that
+  pull with `Temporary failure in name resolution`. Naming the unit in `Image=` is what makes
+  quadlet generate a `Requires=` on it, and **a failed dependency is never retried**:
+  `Restart=` only ever applies to a unit that started at least once, so the container stays down
+  until a human notices. On the radio head that was fifty-five minutes, with the image sitting
+  in local storage the whole time.
+
+  What does *not* fix it, measured rather than assumed: `Restart=on-failure` on the `.image`
+  unit. The pull converges, and the container stays `inactive` for good, because its job died
+  at the first failure. (`Upholds=` on the pull unit does pick the container up, at the price of
+  a container that can no longer be stopped on its own — and it still leaves the container down
+  for as long as the registry is unreachable, even though the image is right there.)
+
+  So the pull keeps its own unit — it can be long, and its duration has no business inside the
+  container's start time — the container keeps `After=` on it so the pull still runs first when
+  it can, and the dependency is `Wants=`. Podman then resolves the image at container start with
+  its default `--pull=missing`: the local image starts with no registry involved, and a genuinely
+  missing image fails the container, which `Restart=` retries. Auto-update is unaffected, it
+  reads the container's label.
+
+  The pull unit also carries `Restart=on-failure` with `StartLimitIntervalSec=0`, so a machine
+  that boots without a network still ends up with the image rather than with a stale one, and
+  `PartOf=zwave-js-ui.target`, so stopping the target leaves nothing retrying behind.
+
+  **The image reference appears in both files on purpose**, and the two must be changed together.
+  A divergence is not silent — the pull unit fetches one tag and the container runs the other,
+  which both journals say out loud — but it is a divergence. The alternative, a drop-in that
+  resets the generated `Requires=`, has to restate the other requirements of the container, and
+  silently drops any that a later edit adds. That trap is worse than this one.
 - **Only `external-settings.json` is mounted into the container, never the configuration
   directory.** `:Z` relabels what it mounts to `container_file_t`, recursively and on disk, and
   `init.sh` lives in that directory. Mounting the directory therefore leaves a script systemd

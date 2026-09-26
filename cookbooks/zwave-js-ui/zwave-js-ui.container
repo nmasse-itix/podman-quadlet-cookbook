@@ -4,6 +4,21 @@ Documentation=https://zwave-js.github.io/zwave-js-ui/
 After=network.target var-lib-virtiofs-data.mount zwave-js-ui-init.service
 Requires=var-lib-virtiofs-data.mount zwave-js-ui-init.service
 
+# The pull runs in its own unit -- it can be long, and its duration has no
+# business inside this container's start time -- but it is Wants=, NOT Requires=.
+# A pull needs the registry; starting this container does not, as long as the
+# image is in local storage. Requires= is what took the radio head down for
+# fifty-five minutes on 2026-09-26: no name resolution twenty-six seconds into
+# the boot, pull failed, dependency failed, and a failed dependency is never
+# retried -- Restart= only ever applies to a unit that started at least once.
+# Measured, not assumed: a Restart=on-failure on the pull unit does make the pull
+# converge, and leaves this container inactive for good.
+#
+# After= still orders the pull before this container, so nothing is lost on a
+# boot where the network is there.
+Wants=zwave-js-ui-image.service
+After=zwave-js-ui-image.service
+
 # The Z-Wave controller, under the stable name a udev rule gives it. Without it
 # there is nothing to talk to: the driver would retry forever and every entity
 # of the household would sit unavailable, which is noise, not a service.
@@ -21,20 +36,21 @@ PartOf=zwave-js-ui.target
 
 [Container]
 ContainerName=zwave-js-ui
-# The image reference, and NOT a zwave-js-ui.image unit -- the one deviation from
-# the convention of this repository, for a reason this cookbook has already paid
-# for. A .image unit runs `podman image pull`, which contacts the registry even
-# when the image is already in local storage. A radio head that boots before its
-# network does -- a power cut, a switch that is slower than it is, a cable
-# plugged in after the machine -- therefore fails that pull, and the generated
-# `Requires=` on it takes the container down with it. A failed dependency is
-# never retried: Restart=always only ever applies to a unit that started once.
+# The image REFERENCE, and not the name of the zwave-js-ui.image unit, although
+# that unit exists and is what pulls this image. Naming the unit here is what
+# makes quadlet generate a Requires= on it, and that Requires= is the fault
+# described in [Unit] above.
 #
-# Named here instead, podman resolves the image at container start with its
-# default --pull=missing: the local image starts with no registry involved, and a
-# genuinely missing image fails the container, which Restart= below then retries
-# until the network is there. Auto-update still works -- it reads the label of
-# the container, not the .image unit.
+# Named as a reference, podman resolves it at container start with its default
+# --pull=missing: the local image starts with no registry involved, and a
+# genuinely missing image fails the container, which Restart= below retries until
+# the pull unit has done its job. Auto-update is unaffected, it reads the label
+# of the container.
+#
+# THIS REFERENCE IS ALSO IN zwave-js-ui.image, on purpose, and the two must be
+# changed together. A divergence is not silent -- the pull unit fetches one tag
+# and this container runs the other, which the journal of both says out loud --
+# but it is still a divergence.
 Image=ghcr.io/zwave-js/zwave-js-ui:11
 AutoUpdate=registry
 

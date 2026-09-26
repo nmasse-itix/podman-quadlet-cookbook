@@ -1,0 +1,34 @@
+[Unit]
+Description=podman pull ghcr.io/zwave-js/zwave-js-ui
+Documentation=https://zwave-js.github.io/zwave-js-ui/
+
+# Keep trying. A machine whose network arrives after it does -- a PoE port whose
+# switch takes a minute to forward, an uplink that comes back after the machine --
+# fails this pull once, twenty-six seconds into the boot, and a oneshot that
+# failed once never runs again. Measured on the radio head: network-online.target
+# was reached at boot+26s and the DHCP lease only landed at boot+72s.
+#
+# StartLimitIntervalSec=0 is what makes the retry unlimited: the default start
+# limit (5 attempts in 10 s) turns the unit "failed" for good after 15 seconds of
+# a network that needs a minute.
+StartLimitIntervalSec=0
+
+# Stopping the service target stops the pull with it, so `systemctl stop
+# zwave-js-ui.target` leaves nothing retrying behind.
+PartOf=zwave-js-ui.target
+
+[Image]
+# Multi-architecture manifest (amd64 + arm64, verified 2026-09-26 on tag 11 ->
+# 11.24.1), so the cookbook installs on an aarch64 host as well as on the x86_64
+# radio head. The tag is the major version: Z-Wave JS UI ships the zwave-js
+# driver and its Z-Wave JS Server, whose schema version is what Home Assistant
+# negotiates. A major bump is the one that can break that handshake, so it is
+# the one an operator has to opt into.
+#
+# THIS REFERENCE IS ALSO IN zwave-js-ui.container, on purpose, and the two must
+# be changed together. The reason is in the container file and in the README.
+Image=ghcr.io/zwave-js/zwave-js-ui:11
+
+[Service]
+Restart=on-failure
+RestartSec=60
