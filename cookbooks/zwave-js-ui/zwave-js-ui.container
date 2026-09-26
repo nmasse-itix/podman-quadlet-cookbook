@@ -21,7 +21,21 @@ PartOf=zwave-js-ui.target
 
 [Container]
 ContainerName=zwave-js-ui
-Image=zwave-js-ui.image
+# The image reference, and NOT a zwave-js-ui.image unit -- the one deviation from
+# the convention of this repository, for a reason this cookbook has already paid
+# for. A .image unit runs `podman image pull`, which contacts the registry even
+# when the image is already in local storage. A radio head that boots before its
+# network does -- a power cut, a switch that is slower than it is, a cable
+# plugged in after the machine -- therefore fails that pull, and the generated
+# `Requires=` on it takes the container down with it. A failed dependency is
+# never retried: Restart=always only ever applies to a unit that started once.
+#
+# Named here instead, podman resolves the image at container start with its
+# default --pull=missing: the local image starts with no registry involved, and a
+# genuinely missing image fails the container, which Restart= below then retries
+# until the network is there. Auto-update still works -- it reads the label of
+# the container, not the .image unit.
+Image=ghcr.io/zwave-js/zwave-js-ui:11
 AutoUpdate=registry
 
 # No need for root privileges: the image has no entrypoint script, it execs node

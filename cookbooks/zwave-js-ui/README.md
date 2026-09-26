@@ -27,7 +27,8 @@ This cookbook:
 - Supports automatic container image updates via Podman auto-update.
 
 The image is `ghcr.io/zwave-js/zwave-js-ui:11`, a multi-architecture manifest (amd64 +
-arm64, verified 2026-09-26, version 11.24.1).
+arm64, verified 2026-09-26, version 11.24.1). It is named in the container unit rather than in
+a `.image` unit — see the deviations below, and the reason is boot resilience, not taste.
 
 ## What this cookbook does NOT do
 
@@ -198,6 +199,17 @@ a restart loop fixes.
   artifact. What the external file buys is not secrecy: it is that the authoritative copy lives
   outside the application, is restorable from a vault, and cannot be edited from the web
   interface.
+- **No `.image` unit: the image is named in the container.** A `.image` unit runs
+  `podman image pull`, which contacts the registry even when the image is already in local
+  storage. A machine that boots before its network does — a power cut, a switch slower than the
+  machine, a cable plugged in after power-on — fails that pull with
+  `Temporary failure in name resolution`, and the `Requires=` that quadlet generates on the
+  `.image` unit takes the container down with it. **A failed dependency is never retried**:
+  `Restart=always` only ever applies to a unit that started at least once, so the service stays
+  down until someone notices. Naming the image in the container instead lets podman resolve it
+  at start with its default `--pull=missing`: the local image starts with no registry involved,
+  and a genuinely missing image fails the container, which `Restart=` then retries until the
+  network is there. Auto-update is unaffected — it reads the container's label.
 - **Only `external-settings.json` is mounted into the container, never the configuration
   directory.** `:Z` relabels what it mounts to `container_file_t`, recursively and on disk, and
   `init.sh` lives in that directory. Mounting the directory therefore leaves a script systemd
