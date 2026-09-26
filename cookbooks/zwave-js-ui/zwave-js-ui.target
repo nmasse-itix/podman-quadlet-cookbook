@@ -1,0 +1,11 @@
+[Unit]
+Description=Z-Wave JS UI Service Target
+Documentation=man:systemd.target(5)
+Requires=zwave-js-ui-init.service zwave-js-ui.service
+After=zwave-js-ui-init.service zwave-js-ui.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

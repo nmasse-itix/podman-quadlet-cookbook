@@ -1,0 +1,137 @@
+[Unit]
+Description=Z-Wave JS UI - Z-Wave control panel and Z-Wave JS Server
+Documentation=https://zwave-js.github.io/zwave-js-ui/
+After=network.target var-lib-virtiofs-data.mount zwave-js-ui-init.service
+Requires=var-lib-virtiofs-data.mount zwave-js-ui-init.service
+
+# The pull runs in its own unit -- it can be long, and its duration has no
+# business inside this container's start time -- but it is Wants=, NOT Requires=.
+# A pull needs the registry; starting this container does not, as long as the
+# image is in local storage. Requires= is what took the radio head down for
+# fifty-five minutes on 2026-09-26: no name resolution twenty-six seconds into
+# the boot, pull failed, dependency failed, and a failed dependency is never
+# retried -- Restart= only ever applies to a unit that started at least once.
+# Measured, not assumed: a Restart=on-failure on the pull unit does make the pull
+# converge, and leaves this container inactive for good.
+#
+# After= still orders the pull before this container, so nothing is lost on a
+# boot where the network is there.
+Wants=zwave-js-ui-image.service
+After=zwave-js-ui-image.service
+
+# The Z-Wave controller, under the stable name a udev rule gives it. Without it
+# there is nothing to talk to: the driver would retry forever and every entity
+# of the household would sit unavailable, which is noise, not a service.
+ConditionPathExists=/dev/zwave
+
+# The security keys and the session secret are operator-provided: they are the
+# identity of the Z-Wave network, not a setting. Starting without them would
+# form a network whose keys nobody kept, and re-pairing every device by hand is
+# the only way back from that.
+ConditionPathExists=/etc/quadlets/zwave-js-ui/external-settings.json
+ConditionPathExists=/etc/quadlets/zwave-js-ui/zwave-js-ui.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=zwave-js-ui.target
+
+[Container]
+ContainerName=zwave-js-ui
+# The image REFERENCE, and not the name of the zwave-js-ui.image unit, although
+# that unit exists and is what pulls this image. Naming the unit here is what
+# makes quadlet generate a Requires= on it, and that Requires= is the fault
+# described in [Unit] above.
+#
+# Named as a reference, podman resolves it at container start with its default
+# --pull=missing: the local image starts with no registry involved, and a
+# genuinely missing image fails the container, which Restart= below retries until
+# the pull unit has done its job. Auto-update is unaffected, it reads the label
+# of the container.
+#
+# THIS REFERENCE IS ALSO IN zwave-js-ui.image, on purpose, and the two must be
+# changed together. A divergence is not silent -- the pull unit fetches one tag
+# and this container runs the other, which the journal of both says out loud --
+# but it is still a divergence.
+Image=ghcr.io/zwave-js/zwave-js-ui:11
+AutoUpdate=registry
+
+# No need for root privileges: the image has no entrypoint script, it execs node
+# straight away, and node binds 8091 and 3000 (both > 1024) as this user. It
+# writes nothing outside STORE_DIR.
+User=10035
+Group=10000
+
+# Network configuration (host networking is the convention across this repository)
+Network=host
+
+# The Z-Wave controller. /dev/zwave is a stable name a udev rule of the site
+# gives to its controller, and the device node it points at has to be writable
+# by GID 10000 -- see the README. Naming the device here rather than a
+# /dev/serial/by-id/... path is what keeps this cookbook free of site values.
+#
+# The container path is spelled out, and it has to be: a udev SYMLINK is a
+# symbolic link, and `--device /dev/zwave` alone hands the container the node
+# under its RESOLVED name (/dev/ttyACM0), which is not the name ZWAVE_PORT
+# below asks for. The symptom is a driver that never opens its port:
+# "Failed to open the serial port: No such file or directory (ZW0100)".
+AddDevice=/dev/zwave:/dev/zwave
+
+# Everything the driver needs comes from the environment, so the settings this
+# operator decided stay out of reach of the web interface (Z-Wave JS UI marks
+# them "managed externally" and refuses to edit them):
+#   - ZWAVE_PORT forces the serial port AND enables the driver;
+#   - ZWAVE_EXTERNAL_SETTINGS holds the security keys and the Z-Wave JS Server
+#     settings Home Assistant connects to;
+#   - STORE_DIR moves the store off the image and onto the precious-data mount.
+Environment=ZWAVE_PORT=/dev/zwave
+Environment=ZWAVE_EXTERNAL_SETTINGS=/etc/quadlets/zwave-js-ui/external-settings.json
+Environment=STORE_DIR=/var/lib/virtiofs/data/zwave-js-ui
+
+# SESSION_SECRET and the initial administrator credentials (site secrets).
+EnvironmentFile=/etc/quadlets/zwave-js-ui/zwave-js-ui.env
+
+# Configuration (read-only): the ONE file the container reads, at the same path
+# inside and outside so that ZWAVE_EXTERNAL_SETTINGS names one path only.
+#
+# Never mount the whole /etc/quadlets/zwave-js-ui directory here. ":Z" relabels
+# what it mounts to container_file_t, recursively and on disk, and init.sh lives
+# in that directory: systemd can no longer execute it, so
+# zwave-js-ui-init.service fails 203/EXEC at every boot after the first start of
+# this container, and the Requires= above then keeps the container down with it.
+# A machine that survived its install stops surviving a reboot.
+#
+# ConditionPathExists on this file above is also what keeps podman from creating
+# a DIRECTORY at this path when the operator has not provided the file.
+Volume=/etc/quadlets/zwave-js-ui/external-settings.json:/etc/quadlets/zwave-js-ui/external-settings.json:ro,Z
+
+# Precious data: the store holds the node names, the associations, the NVM
+# backups of the controller and the users of the web interface. It lives on the
+# virtiofs mount so the host's ZFS snapshots and backups pick it up.
+Volume=/var/lib/virtiofs/data/zwave-js-ui:/var/lib/virtiofs/data/zwave-js-ui:z
+
+# Health check: /health is 200 only once the driver is connected to the
+# controller AND the MQTT gateway is either connected or explicitly disabled
+# (which is what the packaged initial-settings.json does). A radio head whose
+# driver is down serves nothing, so that is the right thing to probe. The image
+# has no curl; busybox wget exits non-zero on 500, which is all that is needed.
+#
+# The Accept header is what makes the probe a probe. A request that accepts HTML
+# -- which includes one with no Accept header at all -- is taken by the
+# single-page-application fallback and answered with a 301 to /health/ and then
+# the web interface itself, 200, driver or no driver. The probe would pass
+# forever. Asking for text/plain is what reaches the endpoint.
+HealthCmd=wget -q -O /dev/null --header="Accept: text/plain" http://127.0.0.1:8091/health
+HealthInterval=30s
+HealthTimeout=10s
+# First start downloads the device configuration database into the store, which
+# takes a minute or so before the driver even opens the port.
+HealthStartPeriod=180s
+HealthRetries=5
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+[Install]
+WantedBy=zwave-js-ui.target

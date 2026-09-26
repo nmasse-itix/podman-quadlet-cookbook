@@ -1,0 +1,8 @@
+{
+  "gateway": {
+    "authEnabled": true
+  },
+  "mqtt": {
+    "disabled": true
+  }
+}
