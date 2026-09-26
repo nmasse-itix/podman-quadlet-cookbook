@@ -1,0 +1,24 @@
+[Unit]
+Description=Z-Wave JS UI - Bootstrap the store from the packaged initial settings
+Documentation=https://zwave-js.github.io/zwave-js-ui/guide/#configuration
+After=var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Only run if the initial settings are there to be copied
+ConditionPathExists=/etc/quadlets/zwave-js-ui/initial-settings.json
+
+# Start/stop this unit when the target is started/stopped, before the service
+PartOf=zwave-js-ui.target
+Before=zwave-js-ui.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Seed the store's settings.json on first boot only (see init.sh). Z-Wave JS UI
+# owns that file afterwards: every change made in the web interface is written
+# back to it, so it is never overwritten once it exists.
+ExecStart=/etc/quadlets/zwave-js-ui/init.sh
+
+[Install]
+WantedBy=zwave-js-ui.target

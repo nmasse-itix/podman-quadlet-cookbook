@@ -1,0 +1,19 @@
+{
+  "securityKeys": {
+    "S0_Legacy": "01010101010101010101010101010101",
+    "S2_Unauthenticated": "02020202020202020202020202020202",
+    "S2_Authenticated": "03030303030303030303030303030303",
+    "S2_AccessControl": "04040404040404040404040404040404"
+  },
+  "securityKeysLongRange": {
+    "S2_Authenticated": "05050505050505050505050505050505",
+    "S2_AccessControl": "06060606060606060606060606060606"
+  },
+  "serverEnabled": true,
+  "serverPort": 3000,
+  "serverServiceDiscoveryDisabled": false,
+  "enableSoftReset": true,
+  "logEnabled": true,
+  "logLevel": "info",
+  "logToFile": false
+}

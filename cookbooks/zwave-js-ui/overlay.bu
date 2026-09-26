@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: zwave-js-ui
+    uid: 10035
+    gecos: Z-Wave JS UI
+    home_dir: /var/lib/quadlets/zwave-js-ui
+    primary_group: itix-svc
