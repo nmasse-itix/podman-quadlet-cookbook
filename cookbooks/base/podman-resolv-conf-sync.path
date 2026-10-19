@@ -1,0 +1,12 @@
+[Unit]
+Description=Watch /etc/resolv.conf and resync it into Network=host containers
+Documentation=https://github.com/nmasse-itix/podman-quadlet-cookbook/issues/1
+
+[Path]
+# Fires on any writer (NetworkManager, manual edit, ...), including atomic
+# rename-into-place, since systemd also watches the parent directory.
+PathChanged=/etc/resolv.conf
+Unit=podman-resolv-conf-sync.service
+
+[Install]
+WantedBy=multi-user.target
