@@ -1,0 +1,8 @@
+[Unit]
+Description=Resync /etc/resolv.conf into running Network=host Podman containers
+Documentation=https://github.com/nmasse-itix/podman-quadlet-cookbook/issues/1
+# Triggered by podman-resolv-conf-sync.path whenever /etc/resolv.conf changes.
+
+[Service]
+Type=oneshot
+ExecStart=/etc/quadlets/base/podman-resolv-conf-sync.sh

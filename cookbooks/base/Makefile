@@ -2,8 +2,13 @@
 SYSTEMD_MAIN_UNIT_NAMES := var-lib-virtiofs-data.mount
 SYSTEMD_MAIN_UNIT_NAMES += rpm-ostree-install-qemu-guest-agent.service
 SYSTEMD_MAIN_UNIT_NAMES += install-tools.service
+# .path units are not picked up by common.mk's wildcard (only .service/.target/
+# .timer/.mount), so install and enable/start it explicitly. It triggers the
+# path-scoped podman-resolv-conf-sync.service oneshot.
+SYSTEMD_MAIN_UNIT_NAMES += podman-resolv-conf-sync.path
 
 TARGET_FILES += $(TARGET_CHROOT)/etc/quadlets/base/install-tools.d
+TARGET_FILES += $(TARGET_CHROOT)/etc/systemd/system/podman-resolv-conf-sync.path
 
 # Include common Makefile
 include ../../scripts/common.mk
