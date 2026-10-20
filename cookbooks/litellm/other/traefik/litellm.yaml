@@ -4,11 +4,8 @@ http:
       rule: "Host(`litellm`)"
       entryPoints:
       - http
-      #- https
       middlewares:
       service: "litellm"
-      #tls:
-      #  certResolver: le
   services:
     litellm:
       loadBalancer:

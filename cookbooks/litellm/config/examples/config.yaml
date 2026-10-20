@@ -18,6 +18,8 @@ model_list:
 general_settings:
   # Persist models and credentials added through the Admin UI in the database.
   store_model_in_db: true
+  # Store prompts in the spend logs (if enabled) for auditing and debugging purposes.
+  store_prompts_in_spend_logs: true
 
 litellm_settings:
   # Drop parameters unsupported by the target provider instead of failing.
