@@ -39,12 +39,12 @@ EnvironmentFile=/etc/quadlets/nextcloud/config.env
 
 # Volume mounts
 Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
-Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
-Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
+Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:z
+Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:z
 Volume=/etc/quadlets/nextcloud/custom-noinit.sh:/docker-entrypoint-hooks.d/pre-installation/custom.sh:z,ro
 
 # Health check (equivalent to readiness probe)
-HealthCmd=nc -z localhost 9000
+HealthCmd=nc -z 127.0.0.1 9000
 HealthInterval=30s
 HealthTimeout=10s
 HealthStartPeriod=60s

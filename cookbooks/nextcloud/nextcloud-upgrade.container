@@ -41,12 +41,12 @@ Volume=/etc/quadlets/nextcloud/custom-post.sh:/docker-entrypoint-hooks.d/post-up
 
 # Volume mounts
 Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
-Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
-Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
+Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:z
+Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:z
 
 [Service]
 Restart=no
-TimeoutStartSec=600
+TimeoutStartSec=infinity
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/nextcloud/config.env

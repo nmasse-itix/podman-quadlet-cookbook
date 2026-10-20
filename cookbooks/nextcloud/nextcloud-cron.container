@@ -39,8 +39,8 @@ Exec=-f /var/www/html/cron.php
 
 # Volume mounts
 Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
-Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:Z
-Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:Z
+Volume=/etc/quadlets/nextcloud/www.conf:/usr/local/etc/php-fpm.d/www.conf:z
+Volume=/run/quadlets/nextcloud/redis-session.ini:/usr/local/etc/php/conf.d/redis-session.ini:z
 
 [Service]
 Restart=no

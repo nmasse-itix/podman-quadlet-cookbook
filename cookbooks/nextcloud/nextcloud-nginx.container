@@ -30,10 +30,10 @@ GIDMap=+101:10000:1
 
 # Volume mounts
 Volume=/var/lib/virtiofs/data/nextcloud:/var/www/html:z
-Volume=/etc/quadlets/nextcloud/nginx.conf:/etc/nginx/nginx.conf:ro
+Volume=/etc/quadlets/nextcloud/nginx.conf:/etc/nginx/nginx.conf:z,ro
 
 # Health check (equivalent to readiness probe)
-HealthCmd=curl -sSfL http://localhost/status.php
+HealthCmd=curl -sSf http://127.0.0.1:8080/status.php
 HealthInterval=30s
 HealthTimeout=10s
 HealthStartPeriod=10s

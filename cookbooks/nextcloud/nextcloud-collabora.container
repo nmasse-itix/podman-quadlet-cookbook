@@ -40,7 +40,7 @@ EnvironmentFile=/etc/quadlets/nextcloud/collabora.env
 # <none>
 
 # Health check (equivalent to readiness probe)
-HealthCmd=nc -z localhost 9980
+HealthCmd=/bin/bash -c 'p=9980; if /bin/true 5<> /dev/tcp/127.0.0.1/$p; then echo OK; else echo KO; exit 1; fi; exit 0'
 HealthInterval=30s
 HealthTimeout=10s
 HealthStartPeriod=10s
