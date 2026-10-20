@@ -50,7 +50,7 @@ Volume=/etc/quadlets/postgresql/upgrade.sh:/usr/local/bin/upgrade.sh:z,ro
 
 [Service]
 Restart=no
-TimeoutStartSec=600
+TimeoutStartSec=infinity
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/postgresql/config.env

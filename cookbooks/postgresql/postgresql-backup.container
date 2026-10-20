@@ -43,7 +43,7 @@ Volume=/run/quadlets/postgresql:/var/run/postgresql:z
 
 [Service]
 Restart=no
-TimeoutStartSec=600
+TimeoutStartSec=infinity
 
 # These environment variables are sourced to be used by systemd in the Exec* commands
 EnvironmentFile=/etc/quadlets/postgresql/config.env
