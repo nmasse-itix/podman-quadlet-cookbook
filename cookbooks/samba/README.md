@@ -39,6 +39,18 @@ Verify Samba is running:
 sudo systemctl status samba.service
 ```
 
+Define a password for a user to access the Samba shares:
+
+```sh
+sudo podman exec -it samba smbpasswd -a john
+```
+
+Get a list of currently defined users:
+
+```sh
+sudo podman exec -it samba pdbedit -L
+```
+
 Test connectivity from a client:
 
 ```sh
@@ -48,7 +60,13 @@ smbclient -L //localhost -N
 Connect to a share:
 
 ```sh
-smbclient //localhost/sharename -U username
+smbclient //localhost/sharename -U john
+```
+
+Add a share to `/etc/fstab` to mount it on boot:
+
+```fstab
+//localhost/sharename /mnt/sharename cifs username=john,password=yourpassword 0 0
 ```
 
 Restart the **samba.target** unit.
