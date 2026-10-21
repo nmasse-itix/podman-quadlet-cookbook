@@ -2,5 +2,6 @@
 
 set -Eeuo pipefail
 
-install -o 10015 -g 10000 -m 0600 -t /run/quadlets/vsftpd/tls /var/lib/quadlets/lego/certificates/*.crt /var/lib/quadlets/lego/certificates/*.key
-systemctl --no-block restart vsftpd.service
+# The vsftpd service copies the TLS certificates provided by lego when it starts (see ExecStartPre).
+# "try-restart" does nothing if vsftpd is not running yet (first issuance at boot).
+systemctl --no-block try-restart vsftpd.service

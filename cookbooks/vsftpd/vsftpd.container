@@ -25,6 +25,15 @@ ExecStartPre=/bin/sh -Eeuo pipefail -c '\
                     fi) > /run/quadlets/vsftpd/cache/$file ; \
     done'
 
+# Get the TLS certificates provided by the lego cookbook in place before starting vsftpd.
+# /run/quadlets/vsftpd/tls is a tmpfs: it has to be populated at each start.
+# When the certificates are renewed, the lego hook (other/lego/vsftpd.sh) copies them again.
+ExecStartPre=/bin/bash -Eeuo pipefail -c '\
+    shopt -s nullglob ; \
+    for file in /var/lib/quadlets/lego/certificates/*.crt /var/lib/quadlets/lego/certificates/*.key; do \
+        install -o root -g root -m 0600 -t /run/quadlets/vsftpd/tls "$file" ; \
+    done'
+
 [Container]
 ContainerName=vsftpd
 
@@ -38,12 +47,12 @@ User=0
 # Storage
 Volume=/var/lib/quadlets/vsftpd/log:/var/log/vsftpd:Z
 Volume=/var/lib/quadlets/vsftpd/data:/var/lib/vsftpd:Z
-Volume=/var/lib/virtiofs/data/storage:/data
 Volume=/etc/quadlets/vsftpd/vsftpd.conf.d:/etc/vsftpd:ro
 Volume=/run/quadlets/vsftpd/cache/passwd:/etc/passwd:Z
 Volume=/run/quadlets/vsftpd/cache/group:/etc/group:Z
 Volume=/run/quadlets/vsftpd/cache/shadow:/etc/shadow:Z
 Volume=/run/quadlets/vsftpd/tls:/etc/vsftpd/tls:Z
+# Heads up ! You need to mount the volumes you want to share in a drop-in configuration file !
 
 # Network
 Network=host
