@@ -122,18 +122,18 @@ HealthCmd=wget -q -O /dev/null --no-check-certificate --header 'Host: ping' http
 ExecStartPre=/bin/sh -c 'install -o 10001 -g 10000 -m 0600 -t /run/quadlets/traefik/tls /var/lib/quadlets/lego/certificates/*.crt /var/lib/quadlets/lego/certificates/*.key'
 ```
 
-**/etc/quadlets/traefik/conf.d/tls.yaml**:
+**/etc/quadlets/traefik/conf.d/tls.yaml** (the lego cookbook stores the certificate under the `default` ID, see `certificates.default` in `/etc/quadlets/lego/lego.yaml`):
 
 ```yaml
 tls:
   certificates:
-  - certFile: /etc/traefik/tls/f.q.d.n.crt
-    keyFile: /etc/traefik/tls/f.q.d.n.key
+  - certFile: /etc/traefik/tls/default.crt
+    keyFile: /etc/traefik/tls/default.key
   stores:
     default:
       defaultCertificate:
-        certFile: /etc/traefik/tls/f.q.d.n.crt
-        keyFile: /etc/traefik/tls/f.q.d.n.key
+        certFile: /etc/traefik/tls/default.crt
+        keyFile: /etc/traefik/tls/default.key
 
 http:
   routers:
@@ -185,3 +185,18 @@ http:
         servers:
         - url: "http://127.0.0.1:8080"
 ```
+
+**/etc/quadlets/lego/renew-hooks.d/traefik.sh** (mode 0755, owned by root):
+
+```sh
+#!/bin/bash
+
+set -Eeuo pipefail
+
+# The TLS certificates are copied by the ExecStartPre of traefik.service.
+# "try-restart" does nothing if Traefik is not running yet (first issuance at boot).
+systemctl --no-block try-restart traefik.service
+```
+
+This hook is run by the lego cookbook each time a certificate is obtained or renewed.
+Without it, Traefik would keep serving the old certificate until its next restart.

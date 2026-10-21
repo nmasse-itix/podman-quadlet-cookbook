@@ -1,8 +1,9 @@
 [Unit]
 Description=Quay Container Registry Application
 Documentation=https://docs.projectquay.io/
-After=network.target redis-server.service var-lib-virtiofs-data.mount
+After=network.target redis-server.service var-lib-virtiofs-data.mount lego.target
 Requires=redis-server.service var-lib-virtiofs-data.mount
+Wants=lego.target
 
 # Only start if Quay has been configured
 ConditionPathExists=/etc/quadlets/quay/app/config.yaml
