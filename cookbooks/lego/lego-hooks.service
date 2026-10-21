@@ -1,12 +1,10 @@
 [Unit]
 Description=Process Lego certificate renewal hooks
-# Lego touches .renewed files when renewed certificates are available
+Documentation=https://go-acme.github.io/lego/
+# Lego touches .renewed files when new certificates are available
 ConditionPathExistsGlob=/var/lib/quadlets/lego/certificates/*.renewed
-After=lego-renew.service
+After=lego.service
 
 [Service]
 Type=oneshot
 ExecStart=/etc/quadlets/lego/process-hooks.sh
-
-[Install]
-WantedBy=lego-renew.service

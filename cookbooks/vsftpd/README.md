@@ -7,7 +7,7 @@ vsftpd (Very Secure FTP Daemon) is started as a Podman Quadlet. It provides a se
 This cookbook:
 
 - Builds a custom vsftpd container image locally.
-- Supports TLS encryption with automatic certificate loading from Let's Encrypt (integrates with the `lego` cookbook).
+- Supports TLS encryption with a certificate provided by the `lego` cookbook (Let's Encrypt in production, self-signed in development).
 - Maps system users into the container for authentication.
 - Includes a timer to periodically rebuild the container image.
 - Reloads certificates automatically when renewed.
@@ -15,7 +15,21 @@ This cookbook:
 ## Prerequisites
 
 - Configuration file `/etc/quadlets/vsftpd/vsftpd.conf.d/local.conf` must exist.
-- For TLS support, the `lego` cookbook should be configured to provide certificates.
+- For TLS support, the `lego` cookbook must be configured to provide a certificate named `default` (see the lego cookbook's README).
+- The volumes to share must be mounted on `/data` with a drop-in (see [dropins/vsftpd.container.d/storage.conf](dropins/vsftpd.container.d/storage.conf)).
+
+## TLS certificates
+
+The TLS settings are in `local.conf` (see [config/examples/vsftpd.conf.d/local.conf](config/examples/vsftpd.conf.d/local.conf)):
+
+```ini
+ssl_enable=YES
+rsa_cert_file=/etc/vsftpd/tls/default.crt
+rsa_private_key_file=/etc/vsftpd/tls/default.key
+```
+
+- Before starting vsftpd, **vsftpd.service** copies the certificates from `/var/lib/quadlets/lego/certificates` to `/run/quadlets/vsftpd/tls` (mounted on `/etc/vsftpd/tls` in the container).
+- When lego obtains or renews a certificate, its renewal hook ([other/lego/vsftpd.sh](other/lego/vsftpd.sh)) restarts **vsftpd.service** (if it is running) to load the new certificate.
 
 ## Usage
 
@@ -52,7 +66,7 @@ Or with TLS:
 lftp -u username localhost
 ```
 
-When Let's Encrypt certificates are renewed, the **vsftpd-load-renewed-certificate.service** automatically reloads them.
+When the certificates are renewed by lego, **vsftpd.service** is restarted automatically to load them.
 
 Restart the **vsftpd.target** unit.
 
@@ -69,5 +83,5 @@ sudo make uninstall clean
 ## Integration tests
 
 ```sh
-sudo make test
+sudo make pytest
 ```

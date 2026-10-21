@@ -44,8 +44,8 @@ allowed_nets = 0.0.0.0/0
 
 ; Enable TLS for incoming connections on port 587
 listen = starttls://0.0.0.0:587
-local_cert = /etc/smtprelay/tls/localhost.crt
-local_key  = /etc/smtprelay/tls/localhost.key
+local_cert = /etc/smtprelay/tls/default.crt
+local_key  = /etc/smtprelay/tls/default.key
 
 ; Enforce encrypted connection on STARTTLS ports before
 ; accepting mails from client.

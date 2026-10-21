@@ -10,3 +10,7 @@ PROJECT_GID = 10000
 
 # Include common Makefile
 include ../../scripts/common.mk
+
+# All config file are owned by root
+$(filter %.conf, $(TARGET_CONFIG_FILES) $(TARGET_EXAMPLES_CONFIG_FILES)):
+	install -o root -g root -m 0644 $< $@
