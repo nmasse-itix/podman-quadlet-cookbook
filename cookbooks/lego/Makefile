@@ -6,6 +6,10 @@
 PROJECT_UID = 10023
 PROJECT_GID = 10000
 
+# .path units are not picked up by common.mk's wildcard (only .service/.target/
+# .timer/.mount), so install it explicitly. It is started by lego.target.
+TARGET_FILES += $(TARGET_CHROOT)/etc/systemd/system/lego-hooks.path
+
 # Include common Makefile
 include ../../scripts/common.mk
 

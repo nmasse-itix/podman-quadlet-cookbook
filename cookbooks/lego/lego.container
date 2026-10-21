@@ -1,15 +1,15 @@
 [Unit]
-Description=Lego Let's Encrypt client - Fetch a certificate
+Description=Lego Let's Encrypt client - Obtain or renew the certificates
 Documentation=https://go-acme.github.io/lego/
+After=network-online.target
+Wants=network-online.target
 PartOf=lego.target
 
-# Only start if no certificates exist yet
-ConditionPathExistsGlob=!/var/lib/quadlets/lego/certificates/*.crt
-# and if Lego has been configured !
-ConditionPathExists=/etc/quadlets/lego/config.env
+# Only start if Lego has been configured !
+ConditionPathExists=/etc/quadlets/lego/lego.yaml
 
 [Container]
-ContainerName=lego-run
+ContainerName=lego
 
 # No need for root privileges
 User=10023
@@ -23,17 +23,16 @@ AutoUpdate=registry
 # Network configuration
 Network=host
 
-# Environment variables from config
-EnvironmentFile=/etc/quadlets/lego/config.env
-
 # Volume mounts
-Volume=/var/lib/quadlets/lego:/.lego:z
+Volume=/var/lib/quadlets/lego:/var/lib/lego:z
+Volume=/etc/quadlets/lego:/etc/lego:ro
 
 # Be safe, set the umask to 0077 so that private keys are not world-readable
 PodmanArgs=--umask=0077
 
-# Command to run
-Exec=$LEGO_GLOBAL_ARGS run $LEGO_RUN_ARGS
+# Lego v5 obtains the missing certificates and renews the expiring ones
+# described in its configuration file. It does nothing otherwise.
+Exec=--config /etc/lego/lego.yaml
 
 [Service]
 # If the command fails, don't try to restart it.
@@ -41,13 +40,10 @@ Exec=$LEGO_GLOBAL_ARGS run $LEGO_RUN_ARGS
 Restart=no
 
 # Getting a certificate may take some time
-TimeoutStartSec=600
+TimeoutStartSec=900
 
 # This container is a job - run once to completion
 Type=oneshot
-
-# These environment variables are sourced to be used by systemd in the Exec* commands
-EnvironmentFile=/etc/quadlets/lego/config.env
 
 [Install]
 WantedBy=lego.target

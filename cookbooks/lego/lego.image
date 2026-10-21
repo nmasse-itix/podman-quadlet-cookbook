@@ -3,5 +3,4 @@ Description=podman pull docker.io/goacme/lego
 Documentation=https://go-acme.github.io/lego/
 
 [Image]
-# TODO: Migrate this Quadlet to Lego v5 (https://go-acme.github.io/lego/migration/index.html)
-Image=docker.io/goacme/lego:v4
+Image=docker.io/goacme/lego:v5

@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch for certificates obtained or renewed by Lego
+Documentation=https://go-acme.github.io/lego/
+PartOf=lego.target
+
+[Path]
+# The Lego deploy hook touches a .renewed file next to each certificate
+# it obtains or renews.
+PathExistsGlob=/var/lib/quadlets/lego/certificates/*.renewed
+Unit=lego-hooks.service
+
+[Install]
+WantedBy=lego.target

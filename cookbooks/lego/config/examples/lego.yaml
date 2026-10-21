@@ -1,0 +1,51 @@
+# Lego v5 configuration file.
+# Reference: https://go-acme.github.io/lego/references/ref-file/
+#
+# Heads up! This file is readable by the lego user (uid 10023).
+# If you use a DNS-01 challenge, put the DNS provider credentials in a
+# separate file (see "envFile" below) with restrictive permissions.
+
+# Where accounts and certificates are stored (inside the container).
+# Mapped to /var/lib/quadlets/lego on the host.
+storage: /var/lib/lego
+
+# Logs go to the systemd journal: no colors.
+log:
+  format: text
+
+accounts:
+  default:
+    # Let's Encrypt staging: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: changeme@example.tld
+    acceptsTermsOfService: true
+
+challenges:
+  http:
+    http:
+      address: ":80"
+  # Example of a DNS-01 challenge:
+  #
+  # dns:
+  #   dns:
+  #     provider: gandiv5
+  #     envFile: /etc/lego/dns.env
+
+certificates:
+  # The certificate ID ("default") is the name of the files in /var/lib/quadlets/lego/certificates.
+  # Other cookbooks (vsftpd, smtprelay, etc.) expect a certificate named "default".
+  default:
+    account: default
+    challenge: http
+    domains:
+      - changeme.example.tld
+    renew:
+      # The lego.timer unit already adds a random delay.
+      disableRandomSleep: true
+
+hooks:
+  # Flag certificates as renewed so that the renewal hooks of other cookbooks are triggered.
+  # The script is interpreted by /bin/sh because SELinux forbids the container
+  # to execute files from /etc/quadlets/lego (mounted read-only, not relabeled).
+  deploy:
+    command: /bin/sh /etc/lego/deploy-hook.sh
