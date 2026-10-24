@@ -451,6 +451,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 		$(SCRIPTS_DIR)/generate-tarball.sh build/$(PROJECT_NAME).tar.gz; \
 		(cat $(SCRIPTS_DIR)/butane.blocklist; echo; for file in $$(find "$$TARGET_CHROOT"); do echo "$${file#$$TARGET_CHROOT}"; done) | sort -u | grep -v -E '^$$' > "$(BUTANE_BLOCKLIST)"; \
 		run make install-examples; \
+		export SYSTEMD_ENABLE_UNITS="" SYSTEMD_START_UNITS=""; \
 		EXAMPLES_YQ_FILES="$$(if [ -f "overlay-examples.bu" ]; then echo "- overlay-examples.bu"; else echo "-"; fi)"; \
 		echo "generate-butane-spec.sh build/$(PROJECT_NAME)-examples.bu"; \
 		$(SCRIPTS_DIR)/generate-butane-spec.sh | yq eval-all '. as $$item ireduce ({}; . *+ $$item)' $$EXAMPLES_YQ_FILES > build/$(PROJECT_NAME)-examples.bu; \

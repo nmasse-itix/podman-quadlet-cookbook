@@ -12,7 +12,7 @@
 # - BUTANE_BLOCKLIST: the path to a file containing a list of files and directories (one per line) to ignore
 #                     (i.e., files and directories that are already part of the CoreOS default installation
 #                     or belonging to another package).
-# - SYSTEMD_MAIN_UNIT_NAMES: the list of systemd main unit names to enable.
+# - SYSTEMD_ENABLE_UNITS: the list of systemd main unit names to enable.
 #
 # The path to of the generated butane file is $1, or stdout if $1 is not provided.
 #
