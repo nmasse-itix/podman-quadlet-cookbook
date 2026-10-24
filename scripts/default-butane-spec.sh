@@ -2,12 +2,12 @@
 
 set -Eeuo pipefail
 
-# Usage: default-butane-spec.sh <ignition file>...
+# Usage: default-butane-spec.sh <ignition file>... <local.ign>
 #
 # Butane inlines the "local" files as data URLs and rejects duplicate entries.
 # So, ignition files whose content is identical to a previous one (typically
-# the empty "-examples" ignition files) are skipped. Merging the same config
-# twice would be a no-op anyway.
+# the empty "-examples" ignition files, or an empty local.ign) are skipped.
+# Merging the same config twice would be a no-op anyway.
 
 cat <<'EOF'
 variant: fcos
@@ -26,4 +26,3 @@ for ign in "$@"; do
     seen[$checksum]="$(basename "$ign")"
     echo "    - local: $(basename "$ign")"
 done
-echo "    - local: local.ign"

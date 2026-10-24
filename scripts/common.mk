@@ -495,8 +495,8 @@ build/fcos-dev.bu: SELF := $(PROJECT_NAME) $(PROJECT_NAME)-examples
 # The ignition files are needed to detect duplicates (see default-butane-spec.sh).
 build/fcos-dev.bu: build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
 build/fcos-test.bu: build/$(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
-build/fcos-dev.bu build/fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh build
-	$(SCRIPTS_DIR)/default-butane-spec.sh $(foreach name,$(SELF) $(DEPS),$(call ignition_path,$(name))) > $@
+build/fcos-dev.bu build/fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh build $(TOP_LEVEL_DIR)/build/local.ign
+	$(SCRIPTS_DIR)/default-butane-spec.sh $(foreach name,$(SELF) $(DEPS),$(call ignition_path,$(name))) $(TOP_LEVEL_DIR)/build/local.ign > $@
 
 # Path of the ignition file of the current project or of one of its dependencies (with or without the "-examples" suffix).
 ignition_path = $(if $(filter $(PROJECT_NAME) $(PROJECT_NAME)-examples,$(1)),build/$(1).ign,$(COOKBOOKS_DIR)/$(patsubst %-examples,%,$(1))/build/$(1).ign)
