@@ -12,5 +12,5 @@ DefaultDependencies=no
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -Eeuo pipefail -c 'shopt -s nullglob; mkdir -p /run/quadlets/base/virtiofs; for tagfile in /sys/fs/virtiofs/*/tag; do tag=$(<"$tagfile"); echo -n > "/run/quadlets/base/virtiofs/$tag"; done'
+ExecStart=/bin/bash -Eeuo pipefail -c 'shopt -s nullglob; mkdir -p /run/quadlets/coreos/virtiofs; for tagfile in /sys/fs/virtiofs/*/tag; do tag=$(<"$tagfile"); echo -n > "/run/quadlets/coreos/virtiofs/$tag"; done'
 RemainAfterExit=yes

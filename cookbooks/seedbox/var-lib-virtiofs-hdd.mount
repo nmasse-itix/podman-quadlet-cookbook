@@ -4,7 +4,7 @@ Requires=discover-virtiofs-tags.service
 After=discover-virtiofs-tags.service
 
 # Only run if the "hdd" tag is present (as discovered by discover-virtiofs-tags.service)
-ConditionPathExists=/run/quadlets/base/virtiofs/hdd
+ConditionPathExists=/run/quadlets/coreos/virtiofs/hdd
 
 [Mount]
 What=hdd

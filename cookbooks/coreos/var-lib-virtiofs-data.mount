@@ -4,7 +4,7 @@ Requires=discover-virtiofs-tags.service
 After=discover-virtiofs-tags.service
 
 # Only run if the "data" tag is present (as discovered by discover-virtiofs-tags.service)
-ConditionPathExists=/run/quadlets/base/virtiofs/data
+ConditionPathExists=/run/quadlets/coreos/virtiofs/data
 
 [Mount]
 What=data

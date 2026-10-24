@@ -1,31 +1,5 @@
 variant: fcos
 version: 1.4.0
-storage:
-  directories:
-  - path: /var/lib/private/sshd
-    mode: 0700
-  files:
-  - path: /etc/resolv.conf
-    overwrite: true
-    contents:
-      inline: "" # will be updated by NetworkManager
-  - path: /etc/NetworkManager/conf.d/itix.conf
-    contents:
-      inline: |
-        [main]
-        # test
-        rc-manager=file
-systemd:
-  units:
-  - name: systemd-resolved.service
-    enabled: false
-    mask: true
-  - name: sshd-keygen@.service
-    dropins:
-    - name: backup-restore.conf
-      contents: |
-        [Service]
-        ExecStartPost=/bin/bash -c 'if [ -f /var/lib/private/sshd/ssh_host_%i_key ]; then cp -Z /var/lib/private/sshd/ssh_host_%i_key{,.pub} /etc/ssh/; elif [ -f /etc/ssh/ssh_host_%i_key ]; then cp -a /etc/ssh/ssh_host_%i_key{,.pub} /var/lib/private/sshd/; fi'
 passwd:
   users:
   - name: core

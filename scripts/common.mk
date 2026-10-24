@@ -11,6 +11,7 @@ help:
 	@echo "  Persistent Storage directory:    /var/lib/quadlets/$(PROJECT_NAME)"
 	@echo "  UID & GID for project files:     $(PROJECT_UID):$(PROJECT_GID)"
 	@echo "  Dependencies:                    $(if $(DEPENDENCIES),$(DEPENDENCIES),none)"
+	@echo "  Implicit dependencies:           $(if $(IMPLICIT_DEPENDENCIES),$(IMPLICIT_DEPENDENCIES),none)"
 	@echo
 	@echo "Available targets:"
 	@echo
@@ -132,15 +133,26 @@ TARGET_EXAMPLE_FILES += $(TARGET_EXAMPLES_CONFIG_FILES) $(TARGET_EXAMPLES_TMPFIL
 # List here the names of other projects (directories at the top-level) that this project depends on.
 DEPENDENCIES ?= 
 
+# Implicit dependencies, injected in every project's butane specs.
+# "coreos" holds everything related to Fedora CoreOS and "base" everything else.
+# "base" depends on "coreos", so the order matters and neither one depends on itself.
+ifeq ($(PROJECT_NAME),coreos)
+IMPLICIT_DEPENDENCIES :=
+else ifeq ($(PROJECT_NAME),base)
+IMPLICIT_DEPENDENCIES := coreos
+else
+IMPLICIT_DEPENDENCIES := coreos base
+endif
+
 # Set this variable to "yes" to skip the confirmation prompt when running "make clean".
 I_KNOW_WHAT_I_AM_DOING ?= 
 
 # List of all ignition files corresponding to the dependencies
-# Here, we inject the "base" project as a dependency. It can therefore be assumed to always be embeddable in project's butane specs.
-DEPENDENCIES_IGNITION_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/build/$$dep.ign; done)
+# Here, we inject the "coreos" and "base" projects as dependencies. They can therefore be assumed to always be embeddable in project's butane specs.
+DEPENDENCIES_IGNITION_FILES := $(foreach dep,$(IMPLICIT_DEPENDENCIES) $(DEPENDENCIES),$(COOKBOOKS_DIR)/$(dep)/build/$(dep).ign)
 
 # Variation of the previous variable with the built-in examples.
-DEPENDENCIES_IGNITION_EXAMPLES_FILES := $(shell for dep in $$(if [ "$(PROJECT_NAME)" != "base" ]; then echo base; fi) $(DEPENDENCIES); do echo $(COOKBOOKS_DIR)/$$dep/build/$$dep.ign $(COOKBOOKS_DIR)/$$dep/build/$$dep-examples.ign; done)
+DEPENDENCIES_IGNITION_EXAMPLES_FILES := $(foreach dep,$(IMPLICIT_DEPENDENCIES) $(DEPENDENCIES),$(COOKBOOKS_DIR)/$(dep)/build/$(dep).ign $(COOKBOOKS_DIR)/$(dep)/build/$(dep)-examples.ign)
 
 # User and group IDs to own the project files and directories.
 PROJECT_UID ?= 0
@@ -152,7 +164,7 @@ include $(HOOKS)
 
 # Dump makefile variables for debugging purposes
 debug:
-	$(foreach v, $(filter %_FILES SYSTEMD_% QUADLET% PROJECT_% DEPENDENCIES% %_DIR, $(.VARIABLES)), $(info $(v): $($(v))))
+	$(foreach v, $(filter %_FILES SYSTEMD_% QUADLET% PROJECT_% DEPENDENCIES% IMPLICIT_DEPENDENCIES %_DIR, $(.VARIABLES)), $(info $(v): $($(v))))
 	@echo "TARGET_CHROOT: $(TARGET_CHROOT)"
 	@echo "BUTANE_BLOCKLIST: $(BUTANE_BLOCKLIST)"
 	@echo "BUTANE_START_TS: $(BUTANE_START_TS)"
@@ -427,7 +439,7 @@ build/$(PROJECT_NAME).tar.gz build/$(PROJECT_NAME).bu build/$(PROJECT_NAME)-exam
 	export ALL_DEPENDENCIES="$(shell $(MAKE) -s list-dependencies 2>/dev/null)"; \
 	set -Eeuo pipefail; \
 	if [ build/$(PROJECT_NAME).bu -ot "$(BUTANE_START_TS)" ] || [ build/$(PROJECT_NAME)-examples.bu -ot "$(BUTANE_START_TS)" ]; then \
-		for dep in base $(DEPENDENCIES); do \
+		for dep in $(IMPLICIT_DEPENDENCIES) $(DEPENDENCIES); do \
 			if [[ "$$dep" == "$(PROJECT_NAME)" ]]; then \
 				# Avoid building the current project as its own dependency. \
 				continue; \
@@ -476,12 +488,18 @@ $(TOP_LEVEL_DIR)/build/local.ign: $(TOP_LEVEL_DIR)/local.bu
 # Generate the Butane specs for development and testing by merging the current project's spec with those of the dependencies.
 # The development spec also includes the examples of the current project and of its dependencies.
 # Whereas the testing spec only includes the main specs of the current project and of its dependencies.
-build/fcos-dev.bu build/fcos-test.bu: DEPS := $(if $(filter-out base,$(PROJECT_NAME)),base $(DEPENDENCIES),$(DEPENDENCIES))
+build/fcos-dev.bu build/fcos-test.bu: DEPS := $(IMPLICIT_DEPENDENCIES) $(DEPENDENCIES)
 build/fcos-dev.bu: DEPS := $(DEPS) $(addsuffix -examples,$(DEPS))
 build/fcos-test.bu: SELF := $(PROJECT_NAME)
 build/fcos-dev.bu: SELF := $(PROJECT_NAME) $(PROJECT_NAME)-examples
+# The ignition files are needed to detect duplicates (see default-butane-spec.sh).
+build/fcos-dev.bu: build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
+build/fcos-test.bu: build/$(PROJECT_NAME).ign $(DEPENDENCIES_IGNITION_FILES)
 build/fcos-dev.bu build/fcos-test.bu: %.bu: Makefile $(SCRIPTS_DIR)/default-butane-spec.sh build
-	$(SCRIPTS_DIR)/default-butane-spec.sh $(SELF) $(DEPS) > $@
+	$(SCRIPTS_DIR)/default-butane-spec.sh $(foreach name,$(SELF) $(DEPS),$(call ignition_path,$(name))) > $@
+
+# Path of the ignition file of the current project or of one of its dependencies (with or without the "-examples" suffix).
+ignition_path = $(if $(filter $(PROJECT_NAME) $(PROJECT_NAME)-examples,$(1)),build/$(1).ign,$(COOKBOOKS_DIR)/$(patsubst %-examples,%,$(1))/build/$(1).ign)
 
 # Generate the final Fedora CoreOS ignition files (dev & test) by merging the Butane spec with the local and project-specific ignition files, as well as those of the dependencies.
 build/fcos-dev.ign: $(TOP_LEVEL_DIR)/build/local.ign build/$(PROJECT_NAME).ign build/$(PROJECT_NAME)-examples.ign $(DEPENDENCIES_IGNITION_EXAMPLES_FILES)
