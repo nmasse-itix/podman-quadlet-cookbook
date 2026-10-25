@@ -1,0 +1,58 @@
+[Unit]
+Description=Asterisk PBX
+Documentation=https://docs.asterisk.org/
+
+# Wants= and not Requires= on the build: a failed build -- no network at boot --
+# must not keep a container whose image is already in local storage from
+# starting. A genuinely missing image fails the container, and Restart= below
+# retries until the build has produced it.
+Wants=asterisk-build.service
+After=network.target asterisk-build.service
+
+# The SIP endpoints and the dialplan are operator-provided: without them,
+# Asterisk would start and accept no phone.
+ConditionPathExists=/etc/quadlets/asterisk/etc/pjsip.conf
+ConditionPathExists=/etc/quadlets/asterisk/etc/extensions.conf
+
+# Start/stop this unit when the target is started/stopped
+PartOf=asterisk.target
+
+[Container]
+ContainerName=asterisk
+Image=localhost/asterisk:latest
+AutoUpdate=local
+
+# No need for root: SIP listens on 5060 and RTP on 10000-10999, all above 1024.
+User=10036
+Group=10000
+
+# Host networking: RTP takes a range of a thousand UDP ports, which port
+# publishing handles badly, and SIP must see the real addresses of the phones.
+Network=host
+
+# Configuration (read-only). The etc/ sub-directory only, never the whole
+# /etc/quadlets/asterisk: ":Z" relabels what it mounts, and the build context
+# next to it must stay readable by the build.
+Volume=/etc/quadlets/asterisk/etc:/etc/asterisk:ro,Z
+
+# Internal database and spool. Nothing precious: no voicemail, no recordings.
+Volume=/var/lib/quadlets/asterisk:/var/lib/quadlets/asterisk:Z
+
+# Control socket, used by "asterisk -rx" and by the health check.
+Tmpfs=/run/asterisk:rw,mode=1777
+
+# Health check: the CLI answers only when the core is up.
+HealthCmd=asterisk -rx "core show uptime"
+HealthInterval=30s
+HealthTimeout=10s
+HealthStartPeriod=30s
+HealthRetries=3
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+[Install]
+WantedBy=asterisk.target

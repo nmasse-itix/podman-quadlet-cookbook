@@ -1,0 +1,12 @@
+[Unit]
+Description=Asterisk Service Target
+Documentation=man:systemd.target(5)
+Requires=asterisk.service asterisk-build.timer
+Wants=asterisk-tftp.service
+After=asterisk.service asterisk-tftp.service asterisk-build.timer
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

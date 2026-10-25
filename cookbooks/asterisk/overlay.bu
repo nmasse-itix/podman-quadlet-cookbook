@@ -1,0 +1,9 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - name: asterisk
+    uid: 10036
+    gecos: Asterisk PBX
+    home_dir: /var/lib/quadlets/asterisk
+    primary_group: itix-svc

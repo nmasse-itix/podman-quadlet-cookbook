@@ -1,0 +1,15 @@
+FROM docker.io/library/alpine:3.24
+
+# Asterisk 22 (the LTS branch), PJSIP included: Alpine bundles pjproject in the
+# main package. dnsmasq serves the provisioning files of the phones over TFTP,
+# from the same image, so that a single build keeps both up to date.
+RUN apk add --no-cache asterisk dnsmasq
+
+# /etc/asterisk is empty: the sample files are in asterisk-sample-config, which
+# is not installed. The configuration is mounted read-only there at run time.
+
+# SIP signalling. RTP uses 10000-10999/udp, as set in rtp.conf.
+EXPOSE 5060/udp
+
+ENTRYPOINT [ "/usr/sbin/asterisk" ]
+CMD [ "-f", "-n", "-vv" ]

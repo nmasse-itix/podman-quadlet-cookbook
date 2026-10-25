@@ -1,0 +1,28 @@
+[Unit]
+Description=Build of the Asterisk container image
+Documentation=https://www.asterisk.org/
+Wants=network-online.target
+After=network-online.target
+
+# Keep trying. A build that fails because the network is not there yet would
+# otherwise never run again, and the default start limit (5 attempts in 10 s)
+# turns the unit "failed" for good. Same reasoning as the image units of the
+# other cookbooks.
+StartLimitIntervalSec=0
+
+# Stopping the target stops a build that is still retrying.
+PartOf=asterisk.target
+
+[Build]
+File=/etc/quadlets/asterisk/container/Containerfile
+ImageTag=localhost/asterisk:latest
+SetWorkingDirectory=/etc/quadlets/asterisk/container
+
+# Pull the base image only when the registry has a newer one. Pull errors are
+# ignored when a local image exists, so a rebuild without network keeps the
+# current image instead of failing.
+Pull=newer
+
+[Service]
+Restart=on-failure
+RestartSec=60

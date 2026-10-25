@@ -1,0 +1,50 @@
+[Unit]
+Description=Asterisk - TFTP server for the provisioning of the phones
+Documentation=https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
+
+Wants=asterisk-build.service
+After=network.target asterisk-build.service var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# The provisioning files are operator-provided, on the precious-data mount so
+# that the host can write them -- firmware images do not fit in an Ignition
+# file. No condition on their presence: the host may write them after the
+# first boot, and a unit skipped by its condition is not started again when
+# the files arrive. An empty TFTP root only answers "file not found".
+
+# Start/stop this unit when the target is started/stopped
+PartOf=asterisk.target
+
+[Container]
+ContainerName=asterisk-tftp
+Image=localhost/asterisk:latest
+AutoUpdate=local
+
+User=10036
+Group=10000
+
+# TFTP listens on 69/udp, a privileged port.
+AddCapability=CAP_NET_BIND_SERVICE
+
+# Host networking: TFTP answers from an ephemeral port, which port publishing
+# does not follow.
+Network=host
+
+# dnsmasq as a TFTP server and nothing else:
+#   --port=0 disables DNS, and no dhcp-range means no DHCP;
+#   --conf-file=/dev/null ignores the configuration file of the image;
+#   --pid-file= (empty) writes no PID file, which this user could not write.
+Entrypoint=/usr/sbin/dnsmasq
+Exec=--keep-in-foreground --conf-file=/dev/null --pid-file= --port=0 --log-facility=- --enable-tftp --tftp-root=/var/lib/virtiofs/data/asterisk/tftp
+
+# Read-only: the phones fetch, they never upload.
+Volume=/var/lib/virtiofs/data/asterisk/tftp:/var/lib/virtiofs/data/asterisk/tftp:ro,z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+[Install]
+WantedBy=asterisk.target

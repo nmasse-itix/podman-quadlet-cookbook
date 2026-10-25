@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the Asterisk container image
+PartOf=asterisk.target
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=asterisk.target
