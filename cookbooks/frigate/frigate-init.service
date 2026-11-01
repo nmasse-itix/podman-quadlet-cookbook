@@ -1,0 +1,24 @@
+[Unit]
+Description=Frigate - Seed the configuration file on first boot
+Documentation=https://docs.frigate.video/configuration/
+After=var-lib-virtiofs-data.mount systemd-tmpfiles-setup.service
+Requires=var-lib-virtiofs-data.mount
+
+# Only run if there is a seed to copy
+ConditionPathExists=/etc/quadlets/frigate/config.yml
+
+# Start/stop this unit when the target is started/stopped, before the service
+PartOf=frigate.target
+Before=frigate.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Copy the seed on first boot only (see init.sh). Frigate owns config.yml
+# afterwards: its web interface writes every change back to it, and it migrates
+# the file in place on an upgrade.
+ExecStart=/etc/quadlets/frigate/init.sh
+
+[Install]
+WantedBy=frigate.target

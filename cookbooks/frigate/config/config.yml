@@ -1,0 +1,42 @@
+# Seed of /var/lib/virtiofs/data/frigate/config/config.yml, copied once by
+# frigate-init.service. Frigate owns the file afterwards: cameras, masks and
+# zones are added from its web interface. An operator who needs other defaults
+# provides /etc/quadlets/frigate/config.yml before the first boot.
+
+mqtt:
+  enabled: false
+
+# Port 5000 serves the UI and the API WITHOUT authentication. It is meant for
+# the container itself (health check, nginx) and goes on the loopback. The
+# authenticated UI stays on 8971, over TLS.
+networking:
+  listen:
+    internal: 127.0.0.1:5000
+
+# go2rtc listens on every address by default. Its API on 1984 is not
+# authenticated and accepts new stream sources, "exec:" included; the RTSP
+# restream on 8554 is not authenticated either. Frigate reaches both over the
+# loopback. WebRTC (8555) stays open: the browsers connect to it directly.
+go2rtc:
+  api:
+    listen: 127.0.0.1:1984
+  rtsp:
+    listen: 127.0.0.1:8554
+
+# The default of a new Frigate 0.18 configuration: OpenVINO on the CPU, with the
+# SSDLite MobileNet v2 model shipped in the image (amd64 and arm64).
+detectors:
+  ov:
+    type: openvino
+    device: CPU
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+cameras: {}
+
+version: 0.18-0

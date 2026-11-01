@@ -1,0 +1,79 @@
+[Unit]
+Description=Frigate - Network video recorder with object detection
+Documentation=https://docs.frigate.video/
+After=network.target var-lib-virtiofs-data.mount frigate-init.service
+Requires=var-lib-virtiofs-data.mount frigate-init.service
+
+# The pull runs in its own unit, and it is Wants=, NOT Requires=. A pull needs
+# the registry; starting this container does not, as long as the image is in
+# local storage. With Requires=, a boot without network fails the pull, the
+# dependency fails, and a failed dependency is never retried: Restart= only
+# applies to a unit that started at least once.
+#
+# After= still orders the pull before this container, so nothing is lost on a
+# boot where the network is there.
+Wants=frigate-image.service
+After=frigate-image.service
+
+# Frigate starts on the configuration file seeded by frigate-init.service, or on
+# the one it already owns. Without it, Frigate would write a default one of its
+# own, with none of the settings the README lists.
+ConditionPathExists=/var/lib/virtiofs/data/frigate/config/config.yml
+
+# Start/stop this unit when the target is started/stopped
+PartOf=frigate.target
+
+[Container]
+ContainerName=frigate
+# The image REFERENCE, and not the name of the frigate.image unit: naming the
+# unit makes quadlet generate a Requires= on it, which is the fault described in
+# [Unit] above. Podman resolves the reference at start with --pull=missing.
+#
+# THIS REFERENCE IS ALSO IN frigate.image, and the two must be changed together.
+Image=ghcr.io/blakeblackshear/frigate:0.18.2
+
+# Root inside the container: the image starts s6-overlay, which runs nginx,
+# go2rtc and Frigate as root. Frigate documents no other way to run.
+
+# Host networking: the cameras push nothing, Frigate pulls their RTSP streams,
+# and WebRTC needs the real addresses of the browsers. The listening sockets are
+# narrowed by the configuration file instead -- see the README.
+Network=host
+
+# Decoded frames are passed between processes in /dev/shm: about 35 MB per
+# camera detecting at 720p, plus up to 50 MB of logs and nginx cache. 512 MB
+# covers eight cameras and two more. A shm too small shows as "Bus error" in the
+# journal.
+ShmSize=512m
+
+# Recording segments are written here first, then moved to /media/frigate.
+Tmpfs=/tmp/cache:rw,size=1g
+
+# Precious data: configuration, database and model cache on one side,
+# recordings on the other. Both on the virtiofs mount, where the host's ZFS
+# snapshots and quota apply.
+Volume=/var/lib/virtiofs/data/frigate/config:/config:z
+Volume=/var/lib/virtiofs/data/frigate/media:/media/frigate:z
+
+# The recordings are named and the review timeline is drawn in local time.
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Health check: the request of the image's own HEALTHCHECK, on the internal
+# port, which the configuration file binds to the loopback. The image also skips
+# the check during an orderly shutdown; that part needs a shell, and the state
+# of a container being stopped does not matter.
+HealthCmd=curl --fail --silent --show-error http://127.0.0.1:5000/api/version
+HealthInterval=30s
+HealthTimeout=10s
+# The first start converts the detection model, which takes minutes on a CPU.
+HealthStartPeriod=300s
+HealthRetries=5
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+TimeoutStopSec=120
+
+[Install]
+WantedBy=frigate.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Frigate Service Target
+Documentation=man:systemd.target(5)
+Requires=frigate-init.service frigate.service
+After=frigate-init.service frigate.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+[Install]
+WantedBy=multi-user.target

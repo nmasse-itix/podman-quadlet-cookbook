@@ -1,0 +1,27 @@
+[Unit]
+Description=podman pull ghcr.io/blakeblackshear/frigate
+Documentation=https://docs.frigate.video/
+
+# Keep trying. A machine whose network arrives after it does fails this pull
+# once, early in the boot, and a oneshot that failed once never runs again.
+# StartLimitIntervalSec=0 makes the retry unlimited: the default start limit
+# (5 attempts in 10 s) would turn the unit "failed" for good within a minute.
+StartLimitIntervalSec=0
+
+# Stopping the service target stops the pull with it, so `systemctl stop
+# frigate.target` leaves nothing retrying behind.
+PartOf=frigate.target
+
+[Image]
+# Multi-architecture manifest (amd64 + arm64, verified 2026-11-01 on 0.18.2).
+# The tag is a full version: Frigate migrates its configuration file in place
+# when a new minor version starts on it, and keeps no way back. An upgrade is
+# therefore something an operator decides, not something auto-update does.
+#
+# THIS REFERENCE IS ALSO IN frigate.container, on purpose, and the two must be
+# changed together. The reason is in the container file.
+Image=ghcr.io/blakeblackshear/frigate:0.18.2
+
+[Service]
+Restart=on-failure
+RestartSec=60
