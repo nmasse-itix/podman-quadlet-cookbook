@@ -55,8 +55,9 @@ Tmpfs=/tmp/cache:rw,size=1g
 Volume=/var/lib/virtiofs/data/frigate/config:/config:z
 Volume=/var/lib/virtiofs/data/frigate/media:/media/frigate:z
 
-# The recordings are named and the review timeline is drawn in local time.
-Volume=/etc/localtime:/etc/localtime:ro
+# No /etc/localtime: Fedora CoreOS has none (it runs in UTC), and podman fails
+# the start on a missing mount source. Frigate files its recordings by UTC date
+# and its web interface shows the time zone of the browser.
 
 # Health check: the request of the image's own HEALTHCHECK, on the internal
 # port, which the configuration file binds to the loopback. The image also skips
