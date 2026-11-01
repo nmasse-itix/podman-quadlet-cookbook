@@ -1,0 +1,48 @@
+[Unit]
+Description=Asterisk - HTTP server for the directory of the phones
+Documentation=https://busybox.net/downloads/BusyBox.html
+
+Wants=asterisk-build.service
+After=network.target asterisk-build.service var-lib-virtiofs-data.mount
+Requires=var-lib-virtiofs-data.mount
+
+# Static files only, operator-provided on the precious-data mount, like the
+# TFTP root and for the same reasons. A separate directory from the TFTP root:
+# the configuration files of the phones hold their SIP passwords, and HTTP,
+# unlike TFTP, is easily reached from another network.
+
+# Start/stop this unit when the target is started/stopped
+PartOf=asterisk.target
+
+[Container]
+ContainerName=asterisk-http
+Image=localhost/asterisk:latest
+AutoUpdate=local
+
+User=10036
+Group=10000
+
+# HTTP listens on 80/tcp, a privileged port.
+AddCapability=CAP_NET_BIND_SERVICE
+
+# Host networking, as the two other containers: the phones reach the same
+# address for SIP, TFTP and HTTP.
+Network=host
+
+# busybox httpd: -f stays in the foreground, -v logs each request. It reads
+# /etc/httpd.conf of the image for the MIME type of XML files, and lists no
+# directory.
+Entrypoint=/usr/sbin/httpd
+Exec=-f -v -p 80 -h /var/lib/virtiofs/data/asterisk/http
+
+# Read-only: the phones fetch, they never upload.
+Volume=/var/lib/virtiofs/data/asterisk/http:/var/lib/virtiofs/data/asterisk/http:ro,z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
+
+[Install]
+WantedBy=asterisk.target

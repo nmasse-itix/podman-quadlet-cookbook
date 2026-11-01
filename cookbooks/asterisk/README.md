@@ -4,7 +4,7 @@
 
 [Asterisk](https://www.asterisk.org/) is an open source PBX. This cookbook runs it as a SIP server for
 phones on the local network, together with the TFTP server the phones fetch their configuration and
-firmware from.
+firmware from, and an HTTP server for their directory.
 
 This cookbook:
 
@@ -13,6 +13,7 @@ This cookbook:
 - Runs Asterisk directly as a dedicated, unprivileged UID/GID (no user namespace mapping), with
   PJSIP as its only channel driver.
 - Runs dnsmasq as a TFTP server only (no DNS, no DHCP), from the same image, as the same user.
+- Runs the httpd of busybox as a static HTTP server, from the same image, as the same user.
 - Loads an explicit list of Asterisk modules: what calls between SIP phones need, and nothing else.
 - Includes a timer to rebuild the container image daily.
 
@@ -34,11 +35,12 @@ interface.
 | `/etc/quadlets/asterisk/etc/extensions.conf` | Dialplan. Required. |
 | `/etc/quadlets/asterisk/etc/indications.conf` | Call progress tones of the country. Optional: without it, Asterisk logs a warning and uses no tones of its own; the phones play theirs. |
 | `/var/lib/virtiofs/data/asterisk/tftp/` | Configuration files and firmware images of the phones, as each vendor names them. Optional: the TFTP server also runs on an empty directory, so that files written later are served without a restart. |
+| `/var/lib/virtiofs/data/asterisk/http/` | Static files served over HTTP, such as the XML directory of the phones. Optional, like the TFTP root. Keep the configuration files of the phones out of it: they hold SIP passwords, and HTTP is easier to reach from another network than TFTP. |
 
 Asterisk does not start without `pjsip.conf` and `extensions.conf`. Examples of both are in
 `config/examples/etc/`.
 
-The TFTP root is on the virtiofs mount rather than under `/etc/quadlets`, so that the host can write
+The TFTP and HTTP roots are on the virtiofs mount rather than under `/etc/quadlets`, so that the host can write
 it: a firmware image weighs tens of megabytes, which an Ignition file cannot carry. The files must be
 readable by UID 10036.
 
@@ -53,14 +55,15 @@ missing.
 | 5060 | UDP | SIP |
 | 10000-10999 | UDP | RTP (set in `rtp.conf`) |
 | 69 | UDP | TFTP |
+| 80 | TCP | HTTP |
 
-Both containers use host networking.
+All three containers use host networking.
 
 ## UID and GID
 
 | UID | GID | Usage |
 |-----|-----|-------|
-| 10036 | 10000 | Asterisk and dnsmasq |
+| 10036 | 10000 | Asterisk, dnsmasq and httpd |
 
 ## Usage
 
