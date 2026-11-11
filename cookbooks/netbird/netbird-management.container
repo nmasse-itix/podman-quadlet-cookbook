@@ -1,0 +1,55 @@
+[Unit]
+Description=NetBird Management Service
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+After=network.target var-lib-virtiofs-data.mount postgresql.target
+Requires=var-lib-virtiofs-data.mount
+Wants=postgresql.target
+
+# Only start once NetBird has been configured. management.json carries the OIDC settings,
+# the TURN/relay secrets and the data-store encryption key; management.env carries the
+# PostgreSQL DSN (with the database password). Half-configured must not start.
+ConditionPathExists=/etc/quadlets/netbird/management.json
+ConditionPathExists=/etc/quadlets/netbird/management.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=netbird.target
+
+[Container]
+ContainerName=netbird-management
+Image=netbird-management.image
+AutoUpdate=registry
+
+# No need for root privileges: the management server binds 33073 (> 1024) as UID 10035.
+# It reaches PostgreSQL over host networking on 127.0.0.1:5432, which is why it does not
+# use a separate network namespace (the loopback convention across this repository).
+User=10035
+Group=10000
+Network=host
+
+# PostgreSQL DSN (NETBIRD_STORE_ENGINE_POSTGRES_DSN) is injected here so the password is
+# not baked into the world-readable management.json.
+EnvironmentFile=/etc/quadlets/netbird/management.env
+
+# Configuration (read-only) and the management data directory (precious: it holds key
+# material that peers pin, so it lives on the virtiofs mount).
+Volume=/etc/quadlets/netbird/management.json:/etc/netbird/management.json:ro,Z
+Volume=/var/lib/virtiofs/data/netbird/management:/var/lib/netbird:z
+
+# The image entrypoint is "netbird-mgmt management"; Exec provides the arguments.
+# Management serves the HTTP API and gRPC (ManagementService) on the SAME port 33073 via
+# HTTP/2; Traefik reaches it on 127.0.0.1:33073 (h2c for gRPC, http for /api). The store
+# engine is set to postgres in management.json; the schema is migrated by the management
+# process itself on start, so no separate init unit is required.
+Exec=--port 33073 --log-file console --log-level info --metrics-port 9090 --dns-domain netbird.selfhosted --single-account-mode-domain netbird.selfhosted
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Wait for PostgreSQL to accept connections on localhost before starting.
+ExecStartPre=/bin/sh -c 'exec 2>/dev/null; for try in $(seq 0 12); do if ! /bin/true 5<> /dev/tcp/127.0.0.1/5432; then echo "Waiting for PostgreSQL to be available..."; sleep 5; else exit 0; fi; done; exit 1'
+
+[Install]
+WantedBy=netbird.target

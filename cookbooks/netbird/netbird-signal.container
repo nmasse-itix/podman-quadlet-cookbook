@@ -1,0 +1,37 @@
+[Unit]
+Description=NetBird Signal Service
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+After=network.target
+
+# Signal takes no configuration file of its own, but it must not run before the operator
+# has configured NetBird (management.json is the keystone).
+ConditionPathExists=/etc/quadlets/netbird/management.json
+
+# Start/stop this unit when the target is started/stopped
+PartOf=netbird.target
+
+[Container]
+ContainerName=netbird-signal
+Image=netbird-signal.image
+AutoUpdate=registry
+
+# No need for root privileges: signal binds 10000 (> 1024) as UID 10035.
+User=10035
+Group=10000
+Network=host
+
+# The image entrypoint is "netbird-signal run"; Exec provides the arguments. Signal serves
+# gRPC (SignalExchange) and the WebSocket proxy on a SINGLE plaintext port 10000; Traefik
+# terminates TLS on 443 and reaches it on 127.0.0.1:10000 (h2c for gRPC, http for the
+# /ws-proxy/signal upgrade). The metrics port is moved off the default 9090 to avoid
+# colliding with the management metrics endpoint under host networking.
+Exec=--port 10000 --log-file console --log-level info --metrics-port 9092
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=netbird.target

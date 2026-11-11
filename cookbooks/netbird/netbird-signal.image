@@ -1,0 +1,12 @@
+[Unit]
+Description=podman pull docker.io/netbirdio/signal
+Documentation=https://hub.docker.com/r/netbirdio/signal
+
+# Only pull once NetBird has been configured.
+ConditionPathExists=/etc/quadlets/netbird/management.json
+
+[Image]
+# The ":0.79.0" tag is a multi-architecture manifest (amd64 + arm64 + arm/v7, checked
+# 2026-09-19), which is required to run on the aarch64 target.
+# arm64 digest: sha256:78fedec72dfdae9a9527d20254d1a6943d88d27689b741db31d4c9ded4efd433
+Image=docker.io/netbirdio/signal:0.79.0

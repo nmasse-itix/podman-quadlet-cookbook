@@ -1,0 +1,12 @@
+[Unit]
+Description=podman pull docker.io/coturn/coturn
+Documentation=https://hub.docker.com/r/coturn/coturn
+
+# Only pull once NetBird has been configured.
+ConditionPathExists=/etc/quadlets/netbird/turnserver.conf
+
+[Image]
+# The "4.6.2" tag is a multi-architecture manifest (amd64 + arm64 + arm/v6 + arm/v7 + more,
+# checked 2026-09-19), which is required to run on the aarch64 target.
+# arm64 digest: sha256:56355c9c24b314c8f9e9ac00965144e0eaf33ea732a4567e4d911c86b281f9a8
+Image=docker.io/coturn/coturn:4.6.2

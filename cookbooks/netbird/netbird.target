@@ -1,0 +1,22 @@
+[Unit]
+Description=NetBird Control Plane Target
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+
+# The control plane needs PostgreSQL (management store) and Traefik (TLS + HTTP/gRPC
+# ingress on 443). coturn is published directly and does not go through Traefik.
+Requires=postgresql.target traefik.target
+After=postgresql.target traefik.target
+
+Requires=netbird-management.service netbird-signal.service netbird-relay.service netbird-dashboard.service netbird-coturn.service
+After=netbird-management.service netbird-signal.service netbird-relay.service netbird-dashboard.service netbird-coturn.service
+
+# Allow isolation - can stop/start this target independently
+AllowIsolate=yes
+
+# Only start once NetBird has been configured (the operator provides management.json).
+# A VM built from the ignition file before the secrets are pushed stays idle instead of
+# crash-looping.
+ConditionPathExists=/etc/quadlets/netbird/management.json
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,38 @@
+[Unit]
+Description=NetBird coturn STUN/TURN Server
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+After=network.target
+
+# turnserver.conf carries the TURN user/password (must match management.json) and the realm.
+ConditionPathExists=/etc/quadlets/netbird/turnserver.conf
+
+# Start/stop this unit when the target is started/stopped
+PartOf=netbird.target
+
+[Container]
+ContainerName=netbird-coturn
+Image=netbird-coturn.image
+AutoUpdate=registry
+
+# coturn cannot go behind an HTTP reverse proxy: it binds 3478/udp+tcp for STUN/TURN and a
+# wide UDP range for relayed media, so it uses host networking and is published directly to
+# the Internet (see the README ports section). It runs as UID 10035 (no UIDMap, like Traefik)
+# with CAP_NET_BIND_SERVICE so the unprivileged user can bind the privileged port 3478.
+User=10035
+Group=10000
+Network=host
+AddCapability=CAP_NET_BIND_SERVICE
+
+# turnserver.conf is operator-provided (TURN credentials, realm, and — behind NAT — the
+# external-ip). The image entrypoint (docker-entrypoint.sh) runs turnserver with these args.
+Volume=/etc/quadlets/netbird/turnserver.conf:/etc/turnserver.conf:ro,Z
+Exec=-c /etc/turnserver.conf
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=netbird.target

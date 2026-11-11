@@ -1,0 +1,102 @@
+# Traefik dynamic configuration contributed by the netbird cookbook.
+#
+# NetBird 0.29+ multiplexes the management API, the management gRPC service and the signal
+# gRPC service onto a single host name on port 443. TLS is terminated HERE (on the https /
+# :443 entry point) and requests are dispatched by path prefix to the right backend on
+# loopback. gRPC backends are reached over h2c (HTTP/2 cleartext), the plain HTTP and the
+# WebSocket-proxy endpoints over http/1.1. coturn is NOT here: it is published directly.
+#
+# In production the host name and the certificate resolver are site values, injected by the
+# operator via an overlay. This shipped fragment uses the bare host `netbird` and a
+# self-signed certificate (bare `tls: {}`) so it is testable as-is; uncomment certResolver
+# to obtain a real Let's Encrypt certificate.
+http:
+  routers:
+    # Catch-all for the SPA and its static assets. Lowest priority so the path-prefix
+    # routers below win.
+    netbird-dashboard:
+      rule: "Host(`netbird`)"
+      entryPoints:
+      - https
+      service: netbird-dashboard
+      priority: 1
+      tls: {}
+      #tls:
+      #  certResolver: le
+
+    # Management REST API.
+    netbird-api:
+      rule: "Host(`netbird`) && PathPrefix(`/api`)"
+      entryPoints:
+      - https
+      service: netbird-management
+      tls: {}
+
+    # Management gRPC (ManagementService) — h2c to the backend.
+    netbird-management:
+      rule: "Host(`netbird`) && PathPrefix(`/management.ManagementService/`)"
+      entryPoints:
+      - https
+      service: netbird-management-grpc
+      tls: {}
+
+    # Management WebSocket proxy.
+    netbird-wsproxy-mgmt:
+      rule: "Host(`netbird`) && PathPrefix(`/ws-proxy/management`)"
+      entryPoints:
+      - https
+      service: netbird-management
+      tls: {}
+
+    # Signal gRPC (SignalExchange) — h2c to the backend.
+    netbird-signal:
+      rule: "Host(`netbird`) && PathPrefix(`/signalexchange.SignalExchange/`)"
+      entryPoints:
+      - https
+      service: netbird-signal-grpc
+      tls: {}
+
+    # Signal WebSocket proxy.
+    netbird-wsproxy-signal:
+      rule: "Host(`netbird`) && PathPrefix(`/ws-proxy/signal`)"
+      entryPoints:
+      - https
+      service: netbird-signal
+      tls: {}
+
+    # Relay (WebSocket, rels://).
+    netbird-relay:
+      rule: "Host(`netbird`) && PathPrefix(`/relay`)"
+      entryPoints:
+      - https
+      service: netbird-relay
+      tls: {}
+
+  services:
+    netbird-dashboard:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:8080"
+    netbird-management:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:33073"
+        passHostHeader: true
+    netbird-management-grpc:
+      loadBalancer:
+        # h2c:// tells Traefik to speak HTTP/2 cleartext to the gRPC backend.
+        servers:
+        - url: "h2c://127.0.0.1:33073"
+    netbird-signal:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:10000"
+    netbird-signal-grpc:
+      loadBalancer:
+        servers:
+        - url: "h2c://127.0.0.1:10000"
+    netbird-relay:
+      loadBalancer:
+        servers:
+        - url: "http://127.0.0.1:33080"
+        passHostHeader: true

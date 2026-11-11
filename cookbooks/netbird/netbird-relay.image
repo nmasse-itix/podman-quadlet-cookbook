@@ -1,0 +1,12 @@
+[Unit]
+Description=podman pull docker.io/netbirdio/relay
+Documentation=https://hub.docker.com/r/netbirdio/relay
+
+# Only pull once NetBird has been configured.
+ConditionPathExists=/etc/quadlets/netbird/relay.env
+
+[Image]
+# The ":0.79.0" tag is a multi-architecture manifest (amd64 + arm64 + arm/v7, checked
+# 2026-09-19), which is required to run on the aarch64 target.
+# arm64 digest: sha256:80a94d8d174cc74f5bcf77e4b517e1f1c6ac8e31428cdf6f06a204e1eb2afade
+Image=docker.io/netbirdio/relay:0.79.0

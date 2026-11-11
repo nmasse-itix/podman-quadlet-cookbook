@@ -1,0 +1,37 @@
+[Unit]
+Description=NetBird Relay Service
+Documentation=https://docs.netbird.io/selfhosted/selfhosted-guide
+After=network.target
+
+# relay.env carries the relay auth secret and the exposed address; do not start without it.
+ConditionPathExists=/etc/quadlets/netbird/relay.env
+
+# Start/stop this unit when the target is started/stopped
+PartOf=netbird.target
+
+[Container]
+ContainerName=netbird-relay
+Image=netbird-relay.image
+AutoUpdate=registry
+
+# No need for root privileges: relay binds 33080 (> 1024) as UID 10035. The embedded STUN
+# server is off by default (--enable-stun), so relay does not contend with coturn on 3478.
+User=10035
+Group=10000
+Network=host
+
+# NB_LOG_LEVEL, NB_LISTEN_ADDRESS, NB_EXPOSED_ADDRESS and NB_AUTH_SECRET are provided here.
+# The relay speaks WebSocket (rels://); Traefik terminates TLS on 443, routes the /relay
+# PathPrefix to 127.0.0.1:33080 and upgrades the connection. The metrics port is moved off
+# the default 9090 to avoid colliding with management/signal under host networking.
+EnvironmentFile=/etc/quadlets/netbird/relay.env
+Exec=--metrics-port 9093
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=netbird.target
